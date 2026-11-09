@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Pin Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pm.css">
+<style>
+.lg{min-height:100vh;display:flex;flex-wrap:wrap}
+.lg-l{flex:1 1 360px;min-width:0;background:var(--navy);color:#fff;padding:40px 32px;display:flex;flex-direction:column;justify-content:space-between;gap:32px}
+.lg-r{flex:1 1 460px;min-width:0;padding:40px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px}
+.lg-card{width:100%;max-width:520px}
+@media (max-width:760px){.lg-l{padding:24px 20px;gap:16px}.lg-l h1{font-size:40px!important}.lg-r{padding:24px 16px}}
+</style>
+</head>
+<body>
+<div class="lg">
+  <div class="lg-l">
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="22" height="28" viewBox="0 0 22 28" aria-hidden="true"><path d="M11 1C8.8 1 7.4 2.600 7.4 4.400c0 1.500.6 2.600 1.500 3.400C7.300 10.400 5 13.500 5 17.500c0 3 1.300 5.200 2.200 6.400.4.500.2 1.300.2 2.100h7.200c0-.8-.2-1.600.2-2.100.9-1.200 2.200-3.400 2.200-6.400 0-4-2.300-7.100-3.900-9.500.9-.8 1.500-1.900 1.500-3.400C14.600 2.600 13.200 1 11 1z" fill="#F2A93B"/></svg>
+      <span class="pm-brand" style="font-size:28px">PIN MASTER</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:420px">
+      <h1 class="pm-h" style="font-size:56px;line-height:1">Run the whole tournament from one place.</h1>
+      <p style="font-size:17px;line-height:1.5;color:#C9D4E5">Setup, registration, lane draw, live scoring and official results. What you can do depends on your role.</p>
+    </div>
+    <p style="font-size:13px;color:#B9C6DA">Your login id and first PIN were sent to your email by the organiser.</p>
+  </div>
+
+  <main class="lg-r">
+    <div class="pm-card lg-card" id="card" aria-live="polite"></div>
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script src="pm.js"></script>
+<script>
+(function () {
+  var PM = window.PM, h = PM.h, card = document.getElementById('card');
+  var busy = false;
+
+  function msg(kind, text) { return h('p', { class: 'pm-msg pm-msg--' + kind, role: kind === 'err' ? 'alert' : 'status', text: text }); }
+  function field(id, label, type, extra) {
+    return h('div', null,
+      h('label', { class: 'pm-lbl', for: id }, label),
+      h('input', Object.assign({ class: 'pm-in', id: id, type: type, required: true }, extra || {})));
+  }
+  function show() { card.replaceChildren.apply(card, Array.prototype.filter.call(arguments, Boolean)); }
+
+  // ---------- step 1: sign in ----------
+  function signInView(note) {
+    var err = h('div');
+    var form = h('form', { novalidate: true, style: 'display:flex;flex-direction:column;gap:16px', onSubmit: function (e) {
+      e.preventDefault();
+      if (busy) return;
+      var id = form.elements.lid.value.trim(), pin = form.elements.pin.value.trim();
+      if (!id || !pin) { err.replaceChildren(msg('err', 'Enter your login id and PIN.')); return; }
+      busy = true; btn.disabled = true; btn.textContent = 'Signing in…'; err.replaceChildren();
+      PM.api('auth.login', { login_id: id, pin: pin }).then(function (d) {
+        if (d.user.must_change_pin) { PM.setSession({ token: d.token, user: d.user }); changeView(d.user, pin); return; }
+        PM.setSession({ token: d.token, user: d.user, expires_at: d.expires_at });
+        signedIn(d.user);
+      }).catch(function (e2) {
+        err.replaceChildren(msg('err', e2.message || 'Could not sign in.'));
+        form.elements.pin.value = ''; form.elements.pin.focus();
+      }).finally(function () { busy = false; btn.disabled = false; btn.textContent = 'Sign in'; });
+    } },
+      field('lid', 'Login id', 'text', { autocomplete: 'username', autocapitalize: 'characters', autocorrect: 'off', spellcheck: 'false' }),
+      field('pin', 'PIN', 'password', { inputmode: 'numeric', autocomplete: 'current-password' }),
+      err,
+      h('button', { class: 'pm-btn pm-btn--pri', type: 'submit', style: 'width:100%' }, 'Sign in'));
+    var btn = form.querySelector('button[type=submit]');
+    show(h('h2', { class: 'pm-h', style: 'font-size:32px' }, 'Sign in'), note ? msg(note.kind, note.text) : null, form,
+      h('p', { class: 'pm-help', text: 'Forgot your PIN? Ask an admin to reset it. A new PIN will be emailed to you.' }));
+    form.elements.lid.focus();
+  }
+
+  // ---------- step 2: choose your own PIN ----------
+  function changeView(user, oldPin) {
+    var err = h('div');
+    var form = h('form', { novalidate: true, style: 'display:flex;flex-direction:column;gap:16px', onSubmit: function (e) {
+      e.preventDefault();
+      if (busy) return;
+      var a = form.elements.np.value.trim(), b = form.elements.np2.value.trim();
+      if (!/^[0-9]{6,12}$/.test(a)) { err.replaceChildren(msg('err', 'Your PIN must be 6 to 12 digits.')); return; }
+      if (a !== b) { err.replaceChildren(msg('err', 'The two PINs do not match.')); return; }
+      busy = true; btn.disabled = true; btn.textContent = 'Saving…'; err.replaceChildren();
+      PM.api('auth.changePin', { old_pin: oldPin, new_pin: a }).then(function () {
+        return PM.api('auth.login', { login_id: user.login_id, pin: a });
+      }).then(function (d) {
+        PM.setSession({ token: d.token, user: d.user, expires_at: d.expires_at });
+        signedIn(d.user);
+      }).catch(function (e2) {
+        err.replaceChildren(msg('err', e2.message || 'Could not save the PIN.'));
+        busy = false; btn.disabled = false; btn.textContent = 'Save PIN and continue';
+      });
+    } },
+      field('np', 'New PIN (6 to 12 digits)', 'password', { inputmode: 'numeric', autocomplete: 'new-password' }),
+      field('np2', 'Type the new PIN again', 'password', { inputmode: 'numeric', autocomplete: 'new-password' }),
+      h('p', { class: 'pm-help', text: 'Avoid easy PINs like 123456 or 000000. Do not share it with anyone.' }),
+      err,
+      h('button', { class: 'pm-btn pm-btn--pri', type: 'submit', style: 'width:100%' }, 'Save PIN and continue'));
+    var btn = form.querySelector('button[type=submit]');
+    show(h('h2', { class: 'pm-h', style: 'font-size:32px' }, 'Choose your own PIN'),
+      msg('warn', 'Welcome' + (user.display_name ? ', ' + user.display_name : '') + '. The PIN you were sent is only for first use. Choose your own now.'), form);
+    form.elements.np.focus();
+  }
+
+  // ---------- step 3: signed in ----------
+  var ROLE = { admin: 'Admin', team_manager: 'Team manager', marshal: 'Marshal' };
+  function signedIn(user) {
+    if (user.role === 'admin') { location.href = 'users.html'; return; }
+    show(h('h2', { class: 'pm-h', style: 'font-size:32px' }, 'You are signed in'),
+      msg('ok', (user.display_name || user.login_id) + ' · ' + (ROLE[user.role] || user.role)),
+      h('p', { text: 'Your screens are being connected to the system and will open from here. Nothing more to do right now.' }),
+      h('button', { class: 'pm-btn', type: 'button', onClick: function () { PM.api('auth.logout').catch(function () {}).finally(function () { PM.setSession(null); signInView(); }); } }, 'Sign out'));
+  }
+
+  var q = new URLSearchParams(location.search);
+  signInView(q.get('expired') ? { kind: 'warn', text: 'Your session ended. Please sign in again.' } : null);
+})();
+</script>
+</body>
+</html>

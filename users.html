@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Users · Pin Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pm.css">
+</head>
+<body>
+<header class="pm-top">
+  <svg width="18" height="23" viewBox="0 0 22 28" aria-hidden="true"><path d="M11 1C8.8 1 7.4 2.600 7.4 4.400c0 1.500.6 2.600 1.500 3.400C7.300 10.400 5 13.500 5 17.500c0 3 1.300 5.200 2.200 6.400.4.500.2 1.300.2 2.100h7.200c0-.8-.2-1.600.2-2.100.9-1.200 2.200-3.400 2.200-6.400 0-4-2.300-7.100-3.900-9.500.9-.8 1.500-1.900 1.500-3.400C14.600 2.600 13.200 1 11 1z" fill="#F2A93B"/></svg>
+  <span class="pm-brand" style="font-size:22px">PIN MASTER</span>
+  <span class="pm-h" style="font-size:22px;color:#C9D4E5">Users</span>
+  <span class="sp"></span>
+  <span id="who" style="font-size:14px;color:#C9D4E5"></span>
+  <button class="pm-btn" id="out" type="button">Sign out</button>
+</header>
+
+<main class="pm-wrap">
+  <div id="banner" aria-live="polite"></div>
+
+  <section class="pm-card" aria-labelledby="t-top">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between">
+      <div style="flex:1 1 280px;max-width:420px">
+        <label class="pm-lbl" for="tsel">Tournament</label>
+        <select class="pm-sel" id="tsel"></select>
+      </div>
+      <div id="adm" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"></div>
+    </div>
+    <h2 id="t-top" class="pm-h" style="font-size:0;height:0;overflow:hidden">Tournament and admins</h2>
+  </section>
+
+  <section class="pm-card" aria-labelledby="t-add">
+    <h2 id="t-add" class="pm-h" style="font-size:28px">Add a person</h2>
+    <div role="group" aria-label="Role">
+      <button class="pm-seg" type="button" data-role="team_manager" aria-pressed="true">Team manager</button><button class="pm-seg" type="button" data-role="marshal" aria-pressed="false">Marshal</button><button class="pm-seg" type="button" data-role="admin" aria-pressed="false">Admin</button>
+    </div>
+    <form id="addf" novalidate>
+      <div class="pm-grid2">
+        <div id="f-team"><label class="pm-lbl" for="a-team">Team</label><select class="pm-sel" id="a-team"></select></div>
+        <div id="f-id" hidden><label class="pm-lbl" for="a-id">Login id</label><input class="pm-in" id="a-id" autocapitalize="characters" autocomplete="off" spellcheck="false"><p class="pm-help">4 to 24 letters or digits, e.g. AdminPinMaster04</p></div>
+        <div id="f-name"><label class="pm-lbl" for="a-name">Name</label><input class="pm-in" id="a-name" autocomplete="off"></div>
+        <div id="f-mail"><label class="pm-lbl" for="a-mail">Email</label><input class="pm-in" id="a-mail" type="email" autocomplete="off"><p class="pm-help" id="a-mailhelp">The PIN and the system link are emailed here. You will not see the PIN.</p></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px">
+        <button class="pm-btn pm-btn--pri" type="submit" id="a-go">Create login and send PIN</button>
+      </div>
+    </form>
+    <div id="result" aria-live="polite"></div>
+  </section>
+
+  <section class="pm-card" aria-labelledby="t-contacts">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
+      <div><h2 id="t-contacts" class="pm-h" style="font-size:28px">Team manager contacts</h2>
+        <p class="pm-help" style="margin-top:2px">Each team's manager name and email. PINs go to this email.</p></div>
+      <button class="pm-btn" type="button" id="bulk">Create logins for all teams</button>
+    </div>
+    <div id="bulkres" aria-live="polite"></div>
+    <div id="contacts"></div>
+  </section>
+
+  <section class="pm-card" aria-labelledby="t-logins">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
+      <h2 id="t-logins" class="pm-h" style="font-size:28px">Logins</h2>
+      <div role="group" aria-label="Filter" id="flt" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
+    <div id="logins"></div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="pm.js"></script>
+<script>
+(function () {
+  var PM = window.PM, h = PM.h, api = PM.api;
+  var $ = function (id) { return document.getElementById(id); };
+  var ROLE = { admin: 'Admin', team_manager: 'Team manager', marshal: 'Marshal' };
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  var sess = PM.getSession();
+  if (!sess || !sess.user || sess.user.role !== 'admin') { location.replace('login.html'); return; }
+
+  var S = { tid: PM.pref('tid') || '', tournaments: [], teams: [], logins: [], role: 'team_manager', filter: 'all', busy: false };
+
+  function note(kind, text) { return h('p', { class: 'pm-msg pm-msg--' + kind, role: kind === 'err' ? 'alert' : 'status', text: text }); }
+  function banner(kind, text) { $('banner').replaceChildren(kind ? note(kind, text) : ''); }
+  function fatal(e) {
+    if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { location.replace('login.html?expired=1'); return; }
+    banner('err', (e && e.message) || 'Something went wrong. Try again.');
+  }
+  function team(id) { return S.teams.filter(function (t) { return t.team_id === id; })[0]; }
+
+  // ---------- load ----------
+  function load() {
+    return Promise.all([api('db.list', { table: 'Tournaments' }), api('logins.list', {})]).then(function (r) {
+      S.tournaments = r[0].rows; S.logins = r[1].rows;
+      if (!S.tournaments.some(function (t) { return t.tournament_id === S.tid; })) S.tid = S.tournaments.length ? S.tournaments[0].tournament_id : '';
+      PM.pref('tid', S.tid);
+      return S.tid ? api('db.list', { table: 'Teams', where: { tournament_id: S.tid } }) : { rows: [] };
+    }).then(function (t) { S.teams = t.rows.sort(function (a, b) { return String(a.code).localeCompare(String(b.code)); }); render(); })
+      .catch(fatal);
+  }
+
+  // ---------- render ----------
+  function render() {
+    // tournament picker
+    var ts = $('tsel');
+    ts.replaceChildren.apply(ts, S.tournaments.length ? S.tournaments.map(function (t) {
+      return h('option', { value: t.tournament_id, selected: t.tournament_id === S.tid }, t.name + ' (' + t.status + ')');
+    }) : [h('option', { value: '' }, 'No tournament yet')]);
+    ts.value = S.tid;
+
+    // admin count
+    var act = S.logins.filter(function (l) { return l.role === 'admin' && l.active; }).length;
+    $('adm').replaceChildren(h('span', { class: 'pm-tag ' + (act >= 3 ? 'pm-tag--ok' : 'pm-tag--warn') }, act + ' active admin' + (act === 1 ? '' : 's')),
+      h('span', { class: 'pm-help', style: 'margin:0', text: act >= 3 ? 'Minimum of 3 is met.' : 'Keep at least 3 active admins so nobody is locked out.' }));
+
+    renderForm(); renderContacts(); renderLogins();
+  }
+
+  function renderForm() {
+    var r = S.role, hasT = !!S.tid;
+    Array.prototype.forEach.call(document.querySelectorAll('.pm-seg'), function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.role === r));
+      if (b.dataset.role !== 'admin') b.disabled = !hasT;
+    });
+    if (!hasT && r !== 'admin') { S.role = r = 'admin'; Array.prototype.forEach.call(document.querySelectorAll('.pm-seg'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.role === 'admin')); }); }
+    $('f-team').hidden = r !== 'team_manager';
+    $('f-id').hidden = r !== 'admin';
+    $('f-mail').hidden = r === 'admin';
+    var sel = $('a-team'), keep = sel.value;
+    sel.replaceChildren.apply(sel, S.teams.length ? S.teams.map(function (t) { return h('option', { value: t.team_id }, t.code + ' · ' + t.name); }) : [h('option', { value: '' }, 'No teams yet')]);
+    if (keep && team(keep)) sel.value = keep;
+    $('a-go').textContent = r === 'admin' ? 'Create admin login' : 'Create login and send PIN';
+    $('a-mailhelp').textContent = 'The PIN and the system link are emailed here. You will not see the PIN.';
+    if (r === 'team_manager') prefillFromTeam();
+  }
+  function prefillFromTeam() {
+    var t = team($('a-team').value);
+    if (t && !$('a-name').value) $('a-name').value = t.manager_name || '';
+    if (t && !$('a-mail').value) $('a-mail').value = t.manager_email || '';
+  }
+
+  function renderContacts() {
+    var box = $('contacts');
+    $('bulk').disabled = !S.teams.length;
+    if (!S.teams.length) { box.replaceChildren(h('p', { class: 'pm-help', text: S.tid ? 'No teams in this tournament yet. Add teams in Setup.' : 'Create a tournament first.' })); return; }
+    var rows = S.teams.map(function (t) {
+      var has = S.logins.some(function (l) { return l.team_id === t.team_id && l.role === 'team_manager' && l.active; });
+      var nm = h('input', { class: 'pm-in', 'aria-label': 'Manager name for ' + t.code, value: t.manager_name || '' });
+      var em = h('input', { class: 'pm-in', type: 'email', 'aria-label': 'Manager email for ' + t.code, value: t.manager_email || '' });
+      var save = h('button', { class: 'pm-btn pm-btn--sm', type: 'button', onClick: function () {
+        var mail = em.value.trim();
+        if (mail && !EMAIL_RE.test(mail)) { banner('err', t.code + ': that email address is not valid.'); em.focus(); return; }
+        save.disabled = true;
+        api('db.update', { table: 'Teams', key: { team_id: t.team_id }, patch: { manager_name: nm.value.trim(), manager_email: mail } })
+          .then(function () { banner('ok', 'Saved contact for ' + t.code + '.'); return load(); })
+          .catch(function (e) { save.disabled = false; fatal(e); });
+      } }, 'Save');
+      return h('tr', null,
+        h('td', { 'data-l': 'Team' }, h('span', null, h('strong', null, t.code), ' · ' + t.name)),
+        h('td', { 'data-l': 'Manager' }, nm), h('td', { 'data-l': 'Email' }, em),
+        h('td', { 'data-l': 'Login' }, h('span', { class: 'pm-tag ' + (has ? 'pm-tag--ok' : 'pm-tag--warn') }, has ? 'Has login' : 'No login')),
+        h('td', { class: 'act' }, save));
+    });
+    box.replaceChildren(h('div', { style: 'overflow-x:auto' }, h('table', { class: 'pm-tbl' },
+      h('thead', null, h('tr', null, ['Team', 'Manager', 'Email', 'Login', ''].map(function (x) { return h('th', null, x); }))), h('tbody', null, rows))));
+  }
+
+  function renderLogins() {
+    var f = S.filter;
+    var chips = [['all', 'All'], ['admin', 'Admins'], ['team_manager', 'Team managers'], ['marshal', 'Marshals']];
+    $('flt').replaceChildren.apply($('flt'), chips.map(function (c) {
+      return h('button', { class: 'pm-chip', type: 'button', 'aria-pressed': String(f === c[0]), onClick: function () { S.filter = c[0]; renderLogins(); } }, c[1]);
+    }));
+    var list = S.logins.filter(function (l) {
+      if (l.role !== 'admin' && l.tournament_id !== S.tid) return false;
+      return f === 'all' || l.role === f;
+    }).sort(function (a, b) { return (a.role + a.login_id).localeCompare(b.role + b.login_id); });
+    if (!list.length) { $('logins').replaceChildren(h('p', { class: 'pm-help', text: 'No logins to show.' })); return; }
+    var rows = list.map(function (l) {
+      var me = l.login_id === sess.user.login_id;
+      var t = l.team_id ? team(l.team_id) : null;
+      return h('tr', { class: l.active ? '' : 'off' },
+        h('td', { 'data-l': 'Login id' }, h('strong', null, l.login_id), me ? h('span', { class: 'pm-tag', style: 'margin-left:8px' }, 'You') : null),
+        h('td', { 'data-l': 'Name' }, l.display_name || '—'),
+        h('td', { 'data-l': 'Role' }, ROLE[l.role] || l.role),
+        h('td', { 'data-l': 'Team' }, t ? t.code : '—'),
+        h('td', { 'data-l': 'Email' }, l.email || '—'),
+        h('td', { 'data-l': 'Status' }, h('span', { class: 'pm-tag ' + (l.active ? 'pm-tag--ok' : 'pm-tag--off') }, l.active ? 'Active' : 'Off'),
+          l.must_change_pin ? h('span', { class: 'pm-tag pm-tag--warn', style: 'margin-left:6px', title: 'Has not chosen their own PIN yet' }, 'New PIN pending') : null),
+        h('td', { 'data-l': 'Last sign-in' }, PM.fmtTime(l.last_login_at)),
+        h('td', { class: 'act' }, h('div', { class: 'pm-act' },
+          h('button', { class: 'pm-btn pm-btn--sm', type: 'button', onClick: function () { resetPin(l); } }, 'Reset PIN'),
+          me ? null : h('button', { class: 'pm-btn pm-btn--sm' + (l.active ? ' pm-btn--danger' : ''), type: 'button', onClick: function () { setActive(l, !l.active); } }, l.active ? 'Deactivate' : 'Activate'))));
+    });
+    $('logins').replaceChildren(h('div', { style: 'overflow-x:auto' }, h('table', { class: 'pm-tbl' },
+      h('thead', null, h('tr', null, ['Login id', 'Name', 'Role', 'Team', 'Email', 'Status', 'Last sign-in', ''].map(function (x) { return h('th', null, x); }))), h('tbody', null, rows))));
+  }
+
+  // ---------- results of create / reset ----------
+  function pinResult(d, heading) {
+    var kids = [];
+    if (d.emailed) {
+      kids.push(note('ok', heading + ' The PIN was emailed to ' + d.email_to + '. Login id: ' + d.login_id + '.'));
+    } else {
+      var pinEl = h('span', { class: 'pm-pin', 'aria-label': 'PIN ' + d.pin.split('').join(' ') }, d.pin);
+      var copy = h('button', { class: 'pm-btn pm-btn--sm', type: 'button', onClick: function () {
+        var done = function () { copy.textContent = 'Copied'; };
+        if (navigator.clipboard) navigator.clipboard.writeText('Login id: ' + d.login_id + '\nPIN: ' + d.pin).then(done, function () {}); else done();
+      } }, 'Copy login id and PIN');
+      kids.push(note('warn', heading + ' This PIN could not be emailed, so it is shown only once. Give it to the person privately.'),
+        h('div', { style: 'display:flex;flex-wrap:wrap;gap:14px;align-items:center' },
+          h('div', null, h('p', { class: 'pm-lbl', text: 'Login id' }), h('strong', { style: 'font-size:18px' }, d.login_id)),
+          h('div', null, h('p', { class: 'pm-lbl', text: 'PIN (shown once)' }), pinEl), copy),
+        h('p', { class: 'pm-help', text: 'They will be asked to choose their own PIN at first sign-in.' }));
+    }
+    $('result').replaceChildren.apply($('result'), kids);
+  }
+  function lock(btn, on, label) { btn.disabled = on; if (label) btn.textContent = label; }
+
+  // ---------- actions ----------
+  $('addf').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (S.busy) return;
+    var r = S.role, p = { role: r, display_name: $('a-name').value.trim() };
+    if (r === 'team_manager') { p.tournament_id = S.tid; p.team_id = $('a-team').value; p.email = $('a-mail').value.trim(); if (!p.team_id) return banner('err', 'Pick a team first.'); }
+    if (r === 'marshal') { p.tournament_id = S.tid; p.email = $('a-mail').value.trim(); }
+    if (r === 'admin') { p.login_id = $('a-id').value.trim(); if (!p.login_id) return banner('err', 'Enter a login id for the new admin.'); }
+    if (r !== 'admin' && !EMAIL_RE.test(p.email)) { $('a-mail').focus(); return banner('err', 'Enter a valid email address. The PIN is sent there.'); }
+    banner(); $('result').replaceChildren();
+    var btn = $('a-go'), label = btn.textContent;
+    S.busy = true; lock(btn, true, 'Creating…');
+    api('logins.create', p).then(function (d) {
+      pinResult(d, 'Login created.');
+      $('a-name').value = ''; $('a-mail').value = ''; $('a-id').value = '';
+      return load();
+    }).catch(fatal).finally(function () { S.busy = false; lock(btn, false, label); });
+  });
+
+  function resetPin(l) {
+    PM.confirmDialog('Reset PIN?', 'A new PIN is created for ' + l.login_id + '. The old one stops working and they are signed out.' + (l.email ? ' The new PIN is emailed to ' + l.email + '.' : ' This login has no email, so the new PIN is shown to you once.'), 'Reset PIN').then(function (ok) {
+      if (!ok) return;
+      banner(); $('result').replaceChildren();
+      return api('logins.resetPin', { login_id: l.login_id }).then(function (d) { pinResult(d, 'PIN reset for ' + l.login_id + '.'); $('result').scrollIntoView({ block: 'center' }); return load(); });
+    }).catch(fatal);
+  }
+  function setActive(l, on) {
+    var go = function () { banner(); return api('logins.setActive', { login_id: l.login_id, active: on }).then(function () { banner('ok', l.login_id + (on ? ' is active again.' : ' has been deactivated and signed out.')); return load(); }); };
+    (on ? Promise.resolve(true) : PM.confirmDialog('Deactivate ' + l.login_id + '?', 'They are signed out now and cannot sign in until you activate the login again.', 'Deactivate', true)).then(function (ok) { return ok ? go() : null; }).catch(fatal);
+  }
+
+  $('bulk').addEventListener('click', function () {
+    var withMail = S.teams.filter(function (t) { return EMAIL_RE.test(t.manager_email || ''); }).length;
+    PM.confirmDialog('Create logins for all teams?', 'Teams with a manager email and no login yet get one, and each PIN is emailed. ' + withMail + ' of ' + S.teams.length + ' teams have an email on file.', 'Create and email').then(function (ok) {
+      if (!ok) return;
+      var btn = $('bulk'); banner(); $('bulkres').replaceChildren(); lock(btn, true, 'Creating…');
+      return api('logins.bulkManagers', { tournament_id: S.tid }).then(function (d) {
+        var c = { emailed: 0, email_failed: 0, exists: 0, no_email: 0 };
+        d.results.forEach(function (x) { c[x.status] = (c[x.status] || 0) + 1; });
+        var kids = [note(c.email_failed || c.no_email ? 'warn' : 'ok', c.emailed + ' emailed' + (c.exists ? ', ' + c.exists + ' already had a login' : '') + (c.no_email ? ', ' + c.no_email + ' have no email on file' : '') + (c.email_failed ? ', ' + c.email_failed + ' could not be emailed' : '') + '.')];
+        d.results.filter(function (x) { return x.status === 'no_email'; }).forEach(function (x) { kids.push(h('p', { class: 'pm-help', text: x.team + ': add a manager email in the table below, then run this again.' })); });
+        d.results.filter(function (x) { return x.status === 'email_failed'; }).forEach(function (x) { kids.push(h('p', { style: 'font-size:14px' }, h('strong', null, x.team), ' · login id ', h('strong', null, x.login_id), ' · PIN (shown once) ', h('strong', null, x.pin))); });
+        $('bulkres').replaceChildren.apply($('bulkres'), kids);
+        return load();
+      }).finally(function () { lock(btn, false, 'Create logins for all teams'); });
+    }).catch(fatal);
+  });
+
+  // ---------- wiring ----------
+  $('tsel').addEventListener('change', function () { S.tid = this.value; PM.pref('tid', S.tid); $('bulkres').replaceChildren(); load(); });
+  $('a-team').addEventListener('change', function () { $('a-name').value = ''; $('a-mail').value = ''; prefillFromTeam(); });
+  Array.prototype.forEach.call(document.querySelectorAll('.pm-seg'), function (b) {
+    b.addEventListener('click', function () { S.role = b.dataset.role; $('a-name').value = ''; $('a-mail').value = ''; $('result').replaceChildren(); renderForm(); });
+  });
+  $('out').addEventListener('click', function () {
+    api('auth.logout').catch(function () {}).finally(function () { PM.setSession(null); location.replace('login.html'); });
+  });
+  $('who').textContent = (sess.user.display_name || sess.user.login_id) + ' · Admin';
+  load();
+})();
+</script>
+</body>
+</html>
