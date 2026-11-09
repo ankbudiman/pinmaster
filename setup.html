@@ -1,0 +1,2008 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tournament Setup</title>
+<script src="./config.js"></script>
+<script src="./pm.js"></script>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Inter',system-ui,sans-serif;color:#0E1A2B;background:#F1F3F7}
+*{box-sizing:border-box}
+h1,h2,h3,p{margin:0}
+.pm-in{width:100%;height:44px;padding:0 12px;border:1px solid #7C8AA0;border-radius:8px;background:#fff;font:inherit;font-size:15px;color:#0E1A2B}
+.pm-in:disabled{background:#EEF1F5;color:#44546A;border-color:#B7C1D1}
+.pm-in:focus-visible,.pm-btn:focus-visible,.pm-tab:focus-visible,.pm-chip:focus-visible,.pm-row:focus-visible,.pm-sw:focus-visible,.pm-sw-t:focus-visible,.pm-seg:focus-visible,.pm-step:focus-visible{outline:3px solid #1A5CFF;outline-offset:2px}
+.pm-lbl{display:block;font-size:13px;font-weight:600;color:#33445C;margin-bottom:6px}
+.pm-btn{height:44px;padding:0 18px;border-radius:8px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;border:1px solid #7C8AA0;background:#fff;color:#0E1A2B;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.pm-btn:hover{background:#EEF1F5}
+.pm-btn:disabled{opacity:.45;cursor:not-allowed}
+.pm-btn:disabled:hover{background:#fff}
+.pm-btn--pri{background:var(--accent);border-color:var(--accent)}
+.pm-btn--pri:hover{background:var(--accent);filter:brightness(.94)}
+.pm-btn--pri:disabled:hover{background:var(--accent);filter:none}
+.pm-btn--sel{box-shadow:0 0 0 3px #0E1A2B}
+.pm-btn--ghost{border-color:transparent;background:transparent;color:#8A1C12}
+.pm-btn--ghost:hover{background:#FDECEA}
+.pm-hd-btn{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 12px;border-radius:10px;border:1px solid #5A6B85;background:#16263D;color:#fff;font:inherit;cursor:pointer;text-align:left}
+.pm-hd-btn:hover{background:#1D3250}
+.pm-hd-btn{white-space:nowrap}
+.pm-hd-btn:focus-visible{outline:3px solid #8DB2FF;outline-offset:2px}
+.pm-tab{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 18px;border:0;border-bottom:4px solid transparent;background:transparent;font:inherit;font-weight:600;font-size:15px;color:#44546A;cursor:pointer;white-space:nowrap}
+.pm-tab:hover{color:#0E1A2B}
+.pm-tab--on{color:#0E1A2B;border-bottom-color:var(--accent)}
+.pm-num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:13px;background:#DDE3EC;color:#0E1A2B;font-size:13px;font-weight:700}
+.pm-tab--on .pm-num{background:#0E1A2B;color:#fff}
+.pm-chip{min-height:44px;padding:0 16px;border-radius:22px;border:1px solid #7C8AA0;background:#fff;color:#0E1A2B;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+.pm-chip:hover{background:#EEF1F5}
+.pm-chip--on{background:#0E1A2B;border-color:#0E1A2B;color:#fff}
+.pm-chip--on:hover{background:#1D3250}
+.pm-chip:disabled{cursor:not-allowed;opacity:.7}
+.pm-row{width:100%;display:block;text-align:left;font:inherit;color:#0E1A2B;background:#fff;border:1px solid #C3CBD8;border-radius:10px;padding:14px 16px;cursor:pointer}
+.pm-row:hover{border-color:#7C8AA0}
+.pm-row--on{border:2px solid #0E1A2B;padding:13px 15px;background:#FFF8EA}
+.pm-sw{position:relative;width:52px;height:30px;border-radius:15px;border:0;background:#7C8AA0;cursor:pointer;padding:0;flex:none}
+.pm-sw::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:12px;background:#fff;transition:left .15s}
+.pm-sw--on{background:#0B6B45}
+.pm-sw--on::after{left:25px}
+.pm-sw:disabled{opacity:.5;cursor:not-allowed}
+.pm-step{width:44px;height:44px;border-radius:8px;border:1px solid #7C8AA0;background:#fff;font:inherit;font-size:20px;font-weight:600;color:#0E1A2B;cursor:pointer;line-height:1}
+.pm-step:hover{background:#EEF1F5}
+.pm-step:disabled{opacity:.4;cursor:not-allowed}
+.pm-seg{flex:1 1 220px;min-height:56px;padding:10px 14px;border-radius:10px;border:1px solid #7C8AA0;background:#fff;font:inherit;text-align:left;color:#0E1A2B;cursor:pointer}
+.pm-seg:hover{background:#EEF1F5}
+.pm-seg--on{background:#FFF8EA;border:2px solid #0E1A2B;padding:9px 13px}
+.pm-seg:disabled{cursor:not-allowed;opacity:.7}
+.pm-lane{height:38px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#fff;border:1px solid #C3CBD8;color:#44546A}
+.pm-lane--oth{background:#DDE3EC;border-color:#9AA7BA;color:#1F2E45}
+.pm-lane--sel{background:var(--accent);border:2px solid #0E1A2B;color:#0E1A2B;font-weight:700}
+.pm-lane--bad{background:#FDECEA;border:2px solid #B42318;color:#8A1C12;font-weight:700}
+.pm-st{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:13px;font-size:12px;font-weight:700}
+.pm-st--draft{background:#E7ECF3;color:#33445C}
+.pm-st--open{background:#DDF3E7;color:#0B5A38}
+.pm-st--live{background:#FDE3E1;color:#8A1C12}
+.pm-st--warn{background:#FFF1CF;color:#6B4400}
+.pm-st--end{background:#0E1A2B;color:#fff}
+.pm-role{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:12px;border:1px solid #7C8AA0;font-size:12px;font-weight:600}
+.pm-tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:12px;background:#E7ECF3;color:#33445C;font-size:12px;font-weight:600;white-space:nowrap}
+.pm-tag--warn{background:#FFF1CF;color:#6B4400}
+.rs-sc{width:64px;padding:0 6px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px}
+.rl-card{background:#fff;border:1px solid #D5DBE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.rl-field{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding-top:12px;border-top:1px solid #E1E6EE}
+.rl-fl{display:flex;flex-direction:column;gap:3px;min-width:200px;flex:1 1 240px}
+.rl-fl strong{font-size:15px}
+.rl-fl span{font-size:13px;color:#44546A;line-height:1.4}
+.rl-fc{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.rl-step{display:flex;align-items:center;gap:8px}
+.rl-step strong{min-width:64px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:24px}
+.rl-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid #E1E6EE}
+.rl-sum{display:grid;grid-template-columns:minmax(120px,0.8fr) minmax(0,2fr) auto;gap:6px 14px;align-items:baseline;padding:10px 12px;border-top:1px solid #E1E6EE;font-size:14px}
+.rl-chg{background:#FFF8EA}
+.rl-gb{display:flex;flex-direction:column;align-items:center;min-width:56px;padding:6px 8px;border:1px solid #B7C1D1;border-radius:8px;background:#fff}
+.rl-gb span{font-size:11px;font-weight:700;color:#33445C}
+.rl-gb strong{font-family:'Barlow Condensed',sans-serif;font-size:24px;line-height:1.1}
+@media (max-width:760px){.rl-sum{grid-template-columns:1fr}}
+@media (max-width:640px){.pm-hide-sm{display:none}}
+</style>
+</helmet>
+
+<div style="--accent: {{accent}}; min-height: 100vh; background: #F1F3F7">
+
+  <!-- GATE: loading or load error -->
+  <sc-if value="{{gate}}" hint-placeholder-val="{{ false }}">
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px">
+      <div style="width: min(420px, 100%); background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 28px; display: flex; flex-direction: column; gap: 14px">
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 30px; letter-spacing: 1.5px">PIN MASTER</span>
+        <p style="font-size: 16px; line-height: 1.45" role="status">{{gate}}</p>
+        <sc-if value="{{gateRetry}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button class="pm-btn pm-btn--pri" onClick="{{reload}}">Try again</button>
+            <a class="pm-btn" href="users.html" style="text-decoration: none">Back to Users</a>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{loggedIn}}" hint-placeholder-val="{{ true }}">
+
+  <!-- Top bar -->
+  <div style="background: #0E1A2B; color: #fff">
+    <div style="max-width: 1440px; margin: 0 auto; padding: 12px 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="22" height="28" viewBox="0 0 22 28" aria-hidden="true"><path d="M11 1c-2.2 0-3.6 1.6-3.6 3.6 0 1.5.6 2.6 1.5 3.4C7.300 10.400 5 13.500 5 17.500c0 3 1.300 5.200 2.200 6.400.4.500.2 1.300.2 2.100h7.200c0-.8-.2-1.600.2-2.100.9-1.200 2.200-3.400 2.200-6.400 0-4-2.300-7.100-3.900-9.500.9-.8 1.500-1.900 1.500-3.400C14.600 2.600 13.200 1 11 1z" fill="{{accent}}"></path></svg>
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 1.5px">PIN MASTER</span>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <div style="position: relative">
+          <button class="pm-hd-btn" onClick="{{toggleSwitcher}}" aria-expanded="{{switcherOpen}}" aria-haspopup="true" aria-label="Switch tournament">
+            <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+              <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.8px; color: #B9C6DA">TOURNAMENT</span>
+              <span style="font-size: 15px; font-weight: 600; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{titleShort}}</span>
+            </span>
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+
+          <sc-if value="{{switcherOpen}}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; right: 0; top: 56px; width: min(380px, 92vw); z-index: 30; background: #fff; color: #0E1A2B; border-radius: 12px; border: 1px solid #C3CBD8; padding: 8px; box-shadow: 0 12px 32px rgba(14,26,43,0.28)">
+              <p style="padding: 8px 10px 10px; font-size: 13px; font-weight: 600; color: #44546A">Your tournaments. Pick one to set it up.</p>
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <sc-for list="{{tourList}}" as="tr" hint-placeholder-count="3">
+                  <button class="{{tr.cls}}" onClick="{{tr.pick}}" aria-current="{{tr.cur}}">
+                    <span style="display: flex; flex-direction: column; gap: 8px">
+                      <span style="font-weight: 600; font-size: 15px">{{tr.name}}</span>
+                      <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+                        <span class="pm-role">{{tr.role}}</span>
+                        <span class="{{tr.stCls}}">{{tr.status}}</span>
+                        <span style="font-size: 13px; color: #44546A">{{tr.dates}}</span>
+                      </span>
+                    </span>
+                  </button>
+                </sc-for>
+              </div>
+              <sc-if value="{{canCreate}}" hint-placeholder-val="{{ true }}">
+                <div style="padding: 8px 2px 2px">
+                  <button class="pm-btn" style="width: 100%" onClick="{{newTour}}">+ New tournament</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+
+        <a class="pm-hd-btn" href="users.html" style="min-height: 44px; text-decoration: none; color: #fff">Users</a>
+        <span style="width: 40px; height: 40px; border-radius: 20px; background: #E7ECF3; color: #0E1A2B; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center" aria-label="Your account initials">{{initials}}</span>
+        <button class="pm-hd-btn" style="min-height: 44px" onClick="{{signOut}}">Sign out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Title band -->
+  <div style="background: #fff; border-bottom: 1px solid #D5DBE4">
+    <div style="max-width: 1440px; margin: 0 auto; padding: 20px 20px 0">
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+            <span class="{{stCls}}">{{t.status}}</span>
+            <span class="pm-role">{{signedAs}}</span>
+          </div>
+          <h1 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 44px; line-height: 1.05; letter-spacing: 0.3px; overflow-wrap: anywhere">{{title}}</h1>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-bottom: 4px">
+          <span style="font-size: 14px; font-weight: 600; color: {{syncColor}}" role="status" aria-live="polite">{{syncText}}</span>
+          <sc-if value="{{syncRetry}}" hint-placeholder-val="{{ false }}">
+            <button class="pm-btn" onClick="{{saveNow}}">Retry</button>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="display: flex; overflow-x: auto; margin-top: 16px; gap: 4px" role="group" aria-label="Setup steps">
+        <sc-for list="{{steps}}" as="st" hint-placeholder-count="6">
+          <button class="{{st.cls}}" onClick="{{st.go}}" aria-current="{{st.cur}}">
+            <span class="pm-num">{{st.n}}</span>
+            <span>{{st.label}}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div style="max-width: 1440px; margin: 0 auto; padding: 24px 20px 48px; display: flex; flex-direction: column; gap: 20px">
+
+    <!-- TOURNAMENT STATUS -->
+    <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+        <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+            <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.8px; color: #44546A">TOURNAMENT STATUS</span>
+            <span class="{{stCls}}">{{t.status}}</span>
+          </div>
+          <p style="font-size: 15px; color: #33445C; line-height: 1.45">{{statusText}}</p>
+        </div>
+        <sc-if value="{{hasMoves}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="Change status">
+            <sc-for list="{{stMoves}}" as="m" hint-placeholder-count="2">
+              <button class="{{m.cls}}" onClick="{{m.go}}">{{m.label}}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+      <sc-if value="{{hasPend}}" hint-placeholder-val="{{ false }}">
+        <div style="padding: 14px 16px; border-radius: 10px; background: #FFF8EA; border: 2px solid #0E1A2B; display: flex; flex-direction: column; gap: 10px">
+          <strong style="font-size: 16px">{{pendTitle}}</strong>
+          <p style="font-size: 14px; color: #33445C; line-height: 1.45">{{pendText}}</p>
+          <sc-if value="{{pendNeed}}" hint-placeholder-val="{{ false }}">
+            <div>
+              <p class="pm-lbl">Reason (required)</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                <sc-for list="{{stReasons}}" as="r" hint-placeholder-count="5">
+                  <button class="{{r.cls}}" onClick="{{r.pick}}" aria-pressed="{{r.on}}">{{r.label}}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{hasPendIssue}}" hint-placeholder-val="{{ false }}">
+            <p style="font-size: 14px; font-weight: 600; color: #B42318">{{pendIssue}}</p>
+          </sc-if>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button class="pm-btn pm-btn--pri" onClick="{{confirmStatus}}" disabled="{{confirmOff}}">Confirm</button>
+            <button class="pm-btn" onClick="{{cancelStatus}}">Cancel</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{hasStNote}}" hint-placeholder-val="{{ false }}">
+        <p style="font-size: 14px; font-weight: 600; color: #0B5A38">{{stNote}}</p>
+      </sc-if>
+      <sc-if value="{{hasStLog}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 4px; padding-top: 8px; border-top: 1px solid #D5DBE4">
+          <sc-for list="{{statusLog}}" as="g" hint-placeholder-count="2">
+            <p style="font-size: 13px; color: #44546A"><strong style="color: #0E1A2B">{{g.at}}</strong> · {{g.who}} · {{g.text}}</p>
+          </sc-for>
+        </div>
+      </sc-if>
+    </section>
+
+    <sc-if value="{{ro}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 10px; background: #E8F0FF; border: 1px solid #8DB2FF; color: #0F2A63">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="10" cy="10" r="8.500" fill="none" stroke="#0F2A63" stroke-width="2"></circle><path d="M10 9v5M10 6v.5" stroke="#0F2A63" stroke-width="2" stroke-linecap="round"></path></svg>
+        <p style="font-size: 15px; line-height: 1.45"><strong>View only.</strong> {{roleNote}}</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{pubMsg}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 10px; background: #DDF3E7; border: 1px solid #5FB98B; color: #0B3D26">
+        <p style="font-size: 15px; line-height: 1.45"><strong>Tournament published.</strong> Registration is now open to team managers.</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{hasErr}}" hint-placeholder-val="{{ false }}">
+      <div role="alert" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 10px; background: #FDECEA; border: 1px solid #D9A39E; color: #8A1C12">
+        <p style="font-size: 14px; font-weight: 600; line-height: 1.45">{{errText}}</p>
+        <sc-if value="{{errReload}}" hint-placeholder-val="{{ false }}"><button class="pm-btn" onClick="{{reload}}">Reload from server</button></sc-if>
+        <sc-if value="{{noReload}}" hint-placeholder-val="{{ false }}"><button class="pm-chip" onClick="{{clearErr}}">Dismiss</button></sc-if>
+      </div>
+    </sc-if>
+    <sc-if value="{{notCreated}}" hint-placeholder-val="{{ false }}">
+      <div style="padding: 12px 16px; border-radius: 10px; background: #FFF1CF; border: 1px solid #E3B65B; color: #6B4400">
+        <p style="font-size: 14px; font-weight: 600; line-height: 1.45">This tournament is not saved yet. Fill in the name and code on Details, then press Create tournament. After that, everything you change saves by itself.</p>
+      </div>
+    </sc-if>
+    <sc-if value="{{hasUnsaved}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 10px; background: #FFF1CF; border: 1px solid #E3B65B; color: #6B4400">
+        <p style="font-size: 14px; font-weight: 600; line-height: 1.45">{{unsavedText}}</p>
+        <button class="pm-btn" onClick="{{goReview}}">Review and save</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{rMsg}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 10px; background: #DDF3E7; border: 1px solid #5FB98B; color: #0B3D26">
+        <p style="font-size: 15px; font-weight: 600; line-height: 1.4">{{rMsg}}</p>
+        <button class="pm-chip" onClick="{{clearRMsg}}">Dismiss</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showRuleTabs}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="Rules sections">
+        <sc-for list="{{ruleTabs}}" as="rt" hint-placeholder-count="5">
+          <button class="{{rt.cls}}" onClick="{{rt.go}}" aria-pressed="{{rt.on}}">{{rt.label}}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showPresets}}" hint-placeholder-val="{{ false }}">
+      <section class="rl-card" style="gap: 10px">
+        <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Start from a preset</h2>
+        <p style="font-size: 14px; color: #44546A; line-height: 1.5">A preset fills the scoring, ties, points, lane movement, Masters and stepladder settings. Your categories, groupings and venue lanes are kept. Nothing is saved until you press Save rules in Review and save. The tour preset is illustrative, not an official rulebook.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="Presets">
+          <sc-for list="{{presetChips}}" as="p" hint-placeholder-count="3">
+            <button class="{{p.cls}}" onClick="{{p.pick}}" aria-pressed="{{p.on}}">{{p.label}}</button>
+          </sc-for>
+        </div>
+        <p style="font-size: 13px; color: #44546A; line-height: 1.45">{{presetText}}</p>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{secNote}}" hint-placeholder-val="{{ false }}">
+      <div style="padding: 12px 16px; border-radius: 10px; background: #E7ECF3; border: 1px solid #B7C1D1; color: #33445C">
+        <p style="font-size: 14px; font-weight: 600; line-height: 1.45">{{secNote}}</p>
+      </div>
+    </sc-if>
+
+    <sc-for list="{{blocks}}" as="bk" hint-placeholder-count="2">
+      <section class="rl-card">
+        <div>
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">{{bk.title}}</h2>
+          <sc-if value="{{bk.note}}"><p style="font-size: 14px; color: #44546A; margin-top: 4px; line-height: 1.5">{{bk.note}}</p></sc-if>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          <sc-for list="{{bk.fields}}" as="f" hint-placeholder-count="4">
+            <div class="rl-field">
+              <div class="rl-fl">
+                <strong>{{f.label}}</strong>
+                <sc-if value="{{f.help}}"><span>{{f.help}}</span></sc-if>
+                <sc-if value="{{f.risky}}"><span><span class="pm-tag pm-tag--warn">Reason needed once scoring starts</span></span></sc-if>
+              </div>
+              <div class="rl-fc">
+                <sc-for list="{{f.chips}}" as="c" hint-placeholder-count="2">
+                  <button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}" disabled="{{ro}}">{{c.label}}</button>
+                </sc-for>
+                <sc-if value="{{f.stepper}}">
+                  <div class="rl-step">
+                    <button class="pm-step" onClick="{{f.dec}}" disabled="{{f.decOff}}" aria-label="{{f.decAria}}">−</button>
+                    <strong>{{f.val}}</strong>
+                    <button class="pm-step" onClick="{{f.inc}}" disabled="{{f.incOff}}" aria-label="{{f.incAria}}">+</button>
+                  </div>
+                </sc-if>
+                <sc-for list="{{f.inputs}}" as="p" hint-placeholder-count="8">
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: #33445C">
+                    <span>{{p.label}}</span>
+                    <input class="pm-in rs-sc" value="{{p.val}}" onInput="{{p.set}}" inputmode="numeric" aria-label="{{p.aria}}" disabled="{{ro}}">
+                  </label>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+
+    <!-- STEP 1: DETAILS -->
+    <sc-if value="{{isDetails}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+        <div style="flex: 999 1 560px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 20px; align-items: start">
+
+          <section style="grid-column: 1 / -1; background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+            <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Tournament</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px">
+              <div style="flex: 3 1 280px; min-width: 0">
+                <label class="pm-lbl" for="f-name">Tournament name</label>
+                <input class="pm-in" id="f-name" type="text" value="{{t.name}}" onInput="{{on.name}}" disabled="{{ro}}">
+              </div>
+              <div style="flex: 1 1 120px; min-width: 0">
+                <label class="pm-lbl" for="f-ed">Edition / year</label>
+                <input class="pm-in" id="f-ed" type="text" value="{{t.edition}}" onInput="{{on.edition}}" disabled="{{ro}}">
+              </div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end">
+              <div style="flex: 1 1 220px; min-width: 0">
+                <label class="pm-lbl" for="f-code">Tournament code</label>
+                <input class="pm-in" id="f-code" type="text" value="{{t.code}}" onInput="{{on.code}}" maxlength="10" autocapitalize="characters" placeholder="MSSM27">
+                <p style="font-size: 13px; color: #44546A; margin-top: 6px">2 to 10 letters or digits. Suggested from the name and year. It appears in the PIN emails.</p>
+              </div>
+              <sc-if value="{{notCreated}}" hint-placeholder-val="{{ false }}">
+                <button class="pm-btn pm-btn--pri" onClick="{{createTour}}" disabled="{{createOff}}">Create tournament</button>
+              </sc-if>
+            </div>
+            <sc-if value="{{hasDetailsErr}}" hint-placeholder-val="{{ false }}">
+              <p style="font-size: 14px; font-weight: 600; color: #B42318">{{detailsErr}}</p>
+            </sc-if>
+            <div>
+              <label class="pm-lbl" for="f-notes">Notes for managers (optional)</label>
+              <textarea class="pm-in" id="f-notes" style="height: 88px; padding: 10px 12px; resize: vertical" onInput="{{on.notes}}" disabled="{{ro}}" value="{{t.notes}}"></textarea>
+            </div>
+          </section>
+
+          <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+            <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Dates and registration</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px">
+              <div style="flex: 1 1 200px; min-width: 0">
+                <label class="pm-lbl" for="f-start">First day</label>
+                <input class="pm-in" id="f-start" type="date" value="{{t.start}}" onInput="{{on.start}}" disabled="{{ro}}">
+              </div>
+              <div style="flex: 1 1 200px; min-width: 0">
+                <label class="pm-lbl" for="f-end">Last day</label>
+                <input class="pm-in" id="f-end" type="date" value="{{t.end}}" onInput="{{on.end}}" disabled="{{ro}}">
+              </div>
+            </div>
+            <sc-if value="{{dateErr}}" hint-placeholder-val="{{ false }}">
+              <p style="font-size: 14px; font-weight: 600; color: #B42318">The last day is before the first day. Fix the dates to continue.</p>
+            </sc-if>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px">
+              <div style="flex: 1 1 200px; min-width: 0">
+                <label class="pm-lbl" for="f-ro">Registration opens</label>
+                <input class="pm-in" id="f-ro" type="date" value="{{t.regOpen}}" onInput="{{on.regOpen}}" disabled="{{ro}}">
+              </div>
+              <div style="flex: 1 1 200px; min-width: 0">
+                <label class="pm-lbl" for="f-rc">Registration closes</label>
+                <input class="pm-in" id="f-rc" type="date" value="{{t.regClose}}" onInput="{{on.regClose}}" disabled="{{ro}}">
+              </div>
+            </div>
+          </section>
+
+          <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+            <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Venue</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px">
+              <div style="flex: 2 1 240px; min-width: 0">
+                <label class="pm-lbl" for="f-venue">Bowling centre</label>
+                <input class="pm-in" id="f-venue" type="text" value="{{t.venue}}" onInput="{{on.venue}}" disabled="{{ro}}">
+              </div>
+              <div style="flex: 1 1 180px; min-width: 0">
+                <label class="pm-lbl" for="f-city">City</label>
+                <input class="pm-in" id="f-city" type="text" value="{{t.city}}" onInput="{{on.city}}" disabled="{{ro}}">
+              </div>
+              <div style="flex: 1 1 140px; min-width: 0">
+                <label class="pm-lbl" for="f-lanes">Lanes available</label>
+                <input class="pm-in" id="f-lanes" type="number" value="{{t.lanes}}" onInput="{{on.lanes}}" disabled="{{ro}}">
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside style="flex: 1 1 280px; min-width: 0; background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Setup summary</h2>
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px"><span style="color: #44546A">Days</span><strong>{{daysN}}</strong></div>
+            <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px"><span style="color: #44546A">Lanes</span><strong>{{lanesN}}</strong></div>
+            <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px"><span style="color: #44546A">Teams</span><strong>{{teamsN}}</strong></div>
+            <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px"><span style="color: #44546A">Categories</span><strong>{{catsOn}}</strong></div>
+            <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px"><span style="color: #44546A">Category events</span><strong>{{evOn}}</strong></div>
+            <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px"><span style="color: #44546A">Blocks scheduled</span><strong>{{blocksTotal}}</strong></div>
+            <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px"><span style="color: #44546A">Rules</span><strong>{{rulesState}}</strong></div>
+          </div>
+          <sc-if value="{{hasConflicts}}" hint-placeholder-val="{{ false }}">
+            <p style="font-size: 14px; font-weight: 600; color: #B42318; line-height: 1.4">{{conflictCount}} schedule problem(s). Review them in Schedule and lanes.</p>
+          </sc-if>
+        </aside>
+      </div>
+    </sc-if>
+
+    <!-- STEP 2: CATEGORIES AND EVENTS -->
+    <sc-if value="{{isEvents}}" hint-placeholder-val="{{ false }}">
+      <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+        <div>
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Team events</h2>
+          <p style="font-size: 15px; color: #44546A; margin-top: 4px; line-height: 1.45">Each team event has a name, a number of bowlers per team (3 to 6) and a scoring style. Baker means the team bowls one frame sequence and gets one team score per game. Individual scores means every bowler scores and the team total is the sum. Singles and Doubles are always available above.</p>
+        </div>
+        <sc-if value="{{noTev}}" hint-placeholder-val="{{ false }}">
+          <p style="padding: 20px 16px; text-align: center; border: 1px dashed #7C8AA0; border-radius: 12px; font-size: 15px; color: #44546A">No team events yet. Add one below.</p>
+        </sc-if>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <sc-for list="{{tevRows}}" as="te" hint-placeholder-count="2">
+            <div style="border: 1px solid #C3CBD8; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px">
+              <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+                <div style="flex: 2 1 200px; min-width: 0">
+                  <label class="pm-lbl" for="{{te.nameId}}">Event name</label>
+                  <input class="pm-in" id="{{te.nameId}}" type="text" value="{{te.nameVal}}" onInput="{{te.onName}}" disabled="{{ro}}" maxlength="24">
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <button class="pm-step" onClick="{{te.dec}}" disabled="{{te.decOff}}" aria-label="{{te.decAria}}">−</button>
+                  <span style="min-width: 96px; text-align: center; font-size: 15px; font-weight: 600">{{te.sizeVal}}</span>
+                  <button class="pm-step" onClick="{{te.inc}}" disabled="{{te.incOff}}" aria-label="{{te.incAria}}">+</button>
+                </div>
+                <button class="pm-btn pm-btn--ghost" onClick="{{te.remove}}" disabled="{{ro}}" aria-label="{{te.removeLabel}}">Remove</button>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center">
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><span style="font-size: 14px; font-weight: 600">Played</span>
+                  <sc-for list="{{te.onChips}}" as="c" hint-placeholder-count="2"><button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}" disabled="{{ro}}">{{c.label}}</button></sc-for>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><span style="font-size: 14px; font-weight: 600">Scoring</span>
+                  <sc-for list="{{te.fmtChips}}" as="c" hint-placeholder-count="2"><button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}" disabled="{{ro}}">{{c.label}}</button></sc-for>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><span style="font-size: 14px; font-weight: 600">Counts toward All Events</span>
+                  <sc-for list="{{te.allChips}}" as="c" hint-placeholder-count="2"><button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}" disabled="{{ro}}">{{c.label}}</button></sc-for>
+                </div>
+              </div>
+              <p style="font-size: 14px; color: #33445C; line-height: 1.45">{{te.help}}</p>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{hasTevAdd}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <sc-for list="{{tevAdd}}" as="ta" hint-placeholder-count="3"><button class="pm-chip" onClick="{{ta.pick}}" disabled="{{ro}}">{{ta.label}}</button></sc-for>
+          </div>
+        </sc-if>
+      </section>
+
+      <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+        <div>
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Categories</h2>
+          <p style="font-size: 15px; color: #44546A; margin-top: 4px; line-height: 1.45">Add one category for every age group and gender, for example "U12 Boys". Every category plays the events switched on above. Each has its own number of games, and any event can use its own number instead. Bowlers stay in their category for the whole tournament.</p>
+        </div>
+        <sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+            <div style="flex: 2 1 220px; min-width: 0">
+              <label class="pm-lbl" for="c-new">Category name</label>
+              <input class="pm-in" id="c-new" type="text" value="{{newCat}}" onInput="{{onNewCat}}" placeholder="U12 Boys">
+            </div>
+            <div style="flex: 1 1 200px; min-width: 0">
+              <label class="pm-lbl" for="c-copy">Copy games and qualifiers from</label>
+              <select class="pm-in" id="c-copy" value="{{copyFrom}}" onChange="{{onCopy}}">
+                <sc-for list="{{copyOpts}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.label}}</option></sc-for>
+              </select>
+            </div>
+            <button class="pm-btn pm-btn--pri" onClick="{{addCat}}" disabled="{{addCatOff}}">+ Add category</button>
+          </div>
+          <sc-if value="{{hasCatMsg}}" hint-placeholder-val="{{ false }}">
+            <p style="font-size: 14px; font-weight: 600; color: #B42318">{{catMsg}}</p>
+          </sc-if>
+        </sc-if>
+        <sc-if value="{{catNote}}" hint-placeholder-val="{{ false }}">
+          <p style="font-size: 14px; font-weight: 600; color: #6B4400">{{catNote}}</p>
+        </sc-if>
+      </section>
+
+      <sc-if value="{{noCats}}" hint-placeholder-val="{{ true }}">
+        <p style="padding: 28px 16px; text-align: center; border: 1px dashed #7C8AA0; border-radius: 12px; background: #fff; font-size: 15px; color: #44546A; line-height: 1.45">No categories yet. Add the first one above, then set its games.</p>
+      </sc-if>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 20px; align-items: start">
+      <sc-for list="{{catCards}}" as="c" hint-placeholder-count="2">
+        <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+            <div style="min-width: 0">
+              <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 30px; letter-spacing: 0.3px; overflow-wrap: anywhere">{{c.name}}</h2>
+              <p style="font-size: 14px; color: #44546A; margin-top: 2px">{{c.summary}}</p>
+            </div>
+            <sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}">
+              <button class="pm-btn pm-btn--ghost" onClick="{{c.remove}}" aria-label="{{c.removeLabel}}">Remove category</button>
+            </sc-if>
+          </div>
+
+          <div style="border: 1px solid #C3CBD8; border-radius: 10px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+            <div style="flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+              <span style="font-size: 17px; font-weight: 600">Default games</span>
+              <span style="font-size: 14px; color: #44546A; line-height: 1.4">Used by every event below unless it has its own number.</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <button class="pm-step" onClick="{{c.gdec}}" disabled="{{c.gdecOff}}" aria-label="{{c.gdecAria}}">−</button>
+              <span style="min-width: 76px; text-align: center; font-size: 15px; font-weight: 600">{{c.gval}}</span>
+              <button class="pm-step" onClick="{{c.ginc}}" disabled="{{c.gincOff}}" aria-label="{{c.gincAria}}">+</button>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <sc-for list="{{c.cells}}" as="e" hint-placeholder-count="3">
+              <div style="border: 1px solid #C3CBD8; border-radius: 10px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+                <div style="flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                  <span style="font-size: 17px; font-weight: 600">{{e.label}}</span>
+                  <span style="font-size: 14px; color: #44546A; line-height: 1.4">{{e.own}}</span>
+                </div>
+                <sc-if value="{{e.off}}" hint-placeholder-val="{{ false }}">
+                  <span style="min-width: 128px; text-align: center; font-size: 15px; font-weight: 600; color: #44546A">Not played</span>
+                </sc-if>
+                <sc-if value="{{e.live}}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+                    <button class="pm-step" onClick="{{e.dec}}" disabled="{{e.decOff}}" aria-label="{{e.decAria}}">−</button>
+                    <span style="min-width: 76px; text-align: center; font-size: 15px; font-weight: 600">{{e.val}}</span>
+                    <button class="pm-step" onClick="{{e.inc}}" disabled="{{e.incOff}}" aria-label="{{e.incAria}}">+</button>
+                    <sc-if value="{{e.over}}" hint-placeholder-val="{{ false }}"><button class="pm-chip" onClick="{{e.reset}}" disabled="{{ro}}">Use default</button></sc-if>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{c.showQual}}" hint-placeholder-val="{{ true }}">
+              <div style="border: 1px solid #C3CBD8; border-radius: 10px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+                <span style="flex: 1 1 200px; font-size: 17px; font-weight: 600">Bowlers who qualify for Masters</span>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <button class="pm-step" onClick="{{c.qDown}}" disabled="{{c.qDownOff}}" aria-label="{{c.qDownLabel}}">−</button>
+                  <span style="min-width: 76px; text-align: center; font-size: 15px; font-weight: 600">Top {{c.qual}}</span>
+                  <button class="pm-step" onClick="{{c.qUp}}" disabled="{{c.qUpOff}}" aria-label="{{c.qUpLabel}}">+</button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+          <p style="font-size: 14px; color: #33445C; line-height: 1.45; padding: 10px 12px; background: #F1F3F7; border-radius: 8px">{{c.allText}}</p>
+        </section>
+      </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- STEP 3: TEAMS AND LOGINS -->
+    <sc-if value="{{isTeams}}" hint-placeholder-val="{{ false }}">
+      <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+        <div>
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Players per team</h2>
+          <p style="font-size: 15px; color: #44546A; margin-top: 4px; line-height: 1.45">Every team can register up to this many players in each category. Managers cannot go over it. Change it here if this tournament allows more or fewer. It applies to all teams.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px">
+          <button class="pm-step" onClick="{{limitDown}}" disabled="{{limitDownOff}}" aria-label="Lower the player limit">−</button>
+          <span style="min-width: 110px; text-align: center; font-size: 15px; font-weight: 600">{{limit}} per category</span>
+          <button class="pm-step" onClick="{{limitUp}}" disabled="{{limitUpOff}}" aria-label="Raise the player limit">+</button>
+        </div>
+      </section>
+
+      <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+        <div>
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Teams and managers</h2>
+          <p style="font-size: 15px; color: #44546A; margin-top: 4px; line-height: 1.45">Add each team with a short code, and its manager's name and email. The email is where the manager's login and PIN are sent from the Users page. Managers see their own team only. <a href="users.html" style="color: #1A5CFF; font-weight: 600">Open Users</a></p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+          <div style="flex: 1 1 100px; min-width: 0">
+            <label class="pm-lbl" for="t-code">Team code</label>
+            <input class="pm-in" id="t-code" type="text" value="{{newCode}}" onInput="{{onNewCode}}" placeholder="SEL" maxlength="4" autocapitalize="characters">
+          </div>
+          <div style="flex: 2 1 200px; min-width: 0">
+            <label class="pm-lbl" for="t-name">Team name</label>
+            <input class="pm-in" id="t-name" type="text" value="{{newTeam}}" onInput="{{onNewTeam}}" placeholder="Selangor">
+          </div>
+          <div style="flex: 2 1 180px; min-width: 0">
+            <label class="pm-lbl" for="t-mn">Manager name</label>
+            <input class="pm-in" id="t-mn" type="text" value="{{newMn}}" onInput="{{onNewMn}}" placeholder="Cikgu Sam">
+          </div>
+          <div style="flex: 2 1 220px; min-width: 0">
+            <label class="pm-lbl" for="t-me">Manager email</label>
+            <input class="pm-in" id="t-me" type="email" value="{{newMe}}" onInput="{{onNewMe}}" placeholder="name@school.edu.my">
+          </div>
+          <button class="pm-btn pm-btn--pri" onClick="{{addTeam}}" disabled="{{addTeamOff}}">+ Add team</button>
+        </div>
+        <sc-if value="{{hasTeamErr}}" hint-placeholder-val="{{ false }}">
+          <p style="font-size: 14px; font-weight: 600; color: #B42318">{{teamErr}}</p>
+        </sc-if>
+        <sc-if value="{{hasTeamNote}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 10px; background: #DDF3E7; border: 1px solid #5FB98B; color: #0B3D26">
+            <p style="font-size: 15px; font-weight: 600; line-height: 1.4">{{teamNote}}</p>
+            <button class="pm-chip" onClick="{{clearTeamNote}}">Dismiss</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{noTeams}}" hint-placeholder-val="{{ false }}">
+          <p style="padding: 28px 16px; text-align: center; border: 1px dashed #7C8AA0; border-radius: 12px; font-size: 15px; color: #44546A; line-height: 1.45">No teams yet. Add the first team above.</p>
+        </sc-if>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <sc-for list="{{teamRows}}" as="k" hint-placeholder-count="5">
+            <div style="border: 1px solid #C3CBD8; border-radius: 10px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 16px">
+              <div style="flex: 1 1 150px; min-width: 0">
+                <strong style="display: block; font-size: 17px; overflow-wrap: anywhere">{{k.name}}</strong>
+                <span style="font-size: 13px; color: #44546A">Team code {{k.code}}</span>
+                <div style="margin-top: 6px"><span class="{{k.stCls}}">{{k.status}}</span></div>
+              </div>
+              <div style="flex: 2 1 160px; min-width: 0">
+                <label class="pm-lbl">Manager name<input class="pm-in" style="margin-top: 6px; font-weight: 400" type="text" value="{{k.mn}}" onInput="{{k.onMn}}" aria-label="{{k.mnLabel}}"></label>
+              </div>
+              <div style="flex: 2 1 200px; min-width: 0">
+                <label class="pm-lbl">Manager email<input class="pm-in" style="margin-top: 6px; font-weight: 400" type="email" value="{{k.me}}" onInput="{{k.onMe}}" aria-label="{{k.meLabel}}"></label>
+                <sc-if value="{{k.hasMeErr}}" hint-placeholder-val="{{ false }}"><p style="font-size: 13px; font-weight: 600; color: #B42318; margin-top: 4px">Not a valid email address.</p></sc-if>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 22px">
+                  <button class="pm-btn" onClick="{{k.toggleOff}}" aria-label="{{k.offAria}}">{{k.offLabel}}</button>
+                  <button class="pm-btn pm-btn--ghost" onClick="{{k.remove}}" disabled="{{k.removeOff}}" aria-label="{{k.removeLabel}}">Remove</button>
+                </div>
+                <sc-if value="{{k.hasUsed}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #44546A; max-width: 220px; line-height: 1.35">Has athletes, entries or logins, so it can only be withdrawn.</span></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- STEP 4: RULES AND FORMAT -->
+    <sc-if value="{{showTb}}" hint-placeholder-val="{{ false }}">
+      <section class="rl-card">
+        <div>
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Tie-break order</h2>
+          <p style="font-size: 14px; color: #44546A; margin-top: 4px; line-height: 1.5">Applied top to bottom when totals are equal. For All Events, best game is across all games, last game is the last game played and second-last game is the one before it. The Admin roll-off is always the final step. Default: last game, then second-last game.</p>
+          <span class="pm-tag pm-tag--warn" style="margin-top: 8px">Reason needed once scoring starts</span>
+        </div>
+        <div>
+          <sc-for list="{{tbRows}}" as="r" hint-placeholder-count="2">
+            <div class="rl-row">
+              <strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 24px">{{r.n}}</strong>
+              <span style="font-size: 15px; font-weight: 600">{{r.label}}</span>
+              <div style="display: flex; gap: 6px">
+                <button class="pm-chip" disabled="{{r.upOff}}" onClick="{{r.up}}" aria-label="{{r.upAria}}">Up</button>
+                <button class="pm-chip" disabled="{{r.downOff}}" onClick="{{r.down}}" aria-label="{{r.downAria}}">Down</button>
+                <button class="pm-chip" onClick="{{r.rm}}" aria-label="{{r.rmAria}}">Remove</button>
+              </div>
+            </div>
+          </sc-for>
+          <div class="rl-row">
+            <strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 24px">{{tbLast}}</strong>
+            <span style="font-size: 15px; font-weight: 600">Admin roll-off</span>
+            <span class="pm-tag">Always last</span>
+          </div>
+        </div>
+        <sc-if value="{{hasTbAdd}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="Add a tie-break">
+            <sc-for list="{{tbAdd}}" as="a" hint-placeholder-count="1">
+              <button class="pm-chip" onClick="{{a.pick}}">{{a.label}}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{showLanes}}" hint-placeholder-val="{{ false }}">
+      <section class="rl-card">
+        <div>
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Lane movement preview</h2>
+          <p style="font-size: 14px; color: #44546A; margin-top: 4px; line-height: 1.5">{{laneNote}}</p>
+        </div>
+        <sc-for list="{{laneRows}}" as="lr" hint-placeholder-count="3">
+          <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid #E1E6EE">
+            <strong style="font-size: 14px">{{lr.label}}</strong>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <sc-for list="{{lr.boxes}}" as="bx" hint-placeholder-count="6">
+                <div class="rl-gb"><span>{{bx.n}}</span><strong>{{bx.v}}</strong></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{showFit}}" hint-placeholder-val="{{ false }}">
+      <section class="rl-card">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Does Masters fit the venue?</h2>
+          <span class="{{fitCls}}">{{fitChip}}</span>
+        </div>
+        <p style="font-size: 14px; color: #33445C; line-height: 1.5">{{fitText}}</p>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{showLadder}}" hint-placeholder-val="{{ false }}">
+      <section class="rl-card">
+        <div>
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Stepladder, step by step</h2>
+          <p style="font-size: 14px; color: #44546A; margin-top: 4px; line-height: 1.5">{{ladderNote}}</p>
+        </div>
+        <sc-for list="{{ladderRows}}" as="m" hint-placeholder-count="2">
+          <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 4px 12px; padding-top: 10px; border-top: 1px solid #E1E6EE; align-items: baseline">
+            <strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 22px">{{m.label}}</strong>
+            <div style="display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 15px; font-weight: 600">{{m.versus}}</span>
+              <span style="font-size: 13px; color: #44546A">{{m.result}}</span>
+            </div>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{showSave}}" hint-placeholder-val="{{ false }}">
+      <section class="rl-card">
+        <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Changes to save</h2>
+        <sc-if value="{{noChanges}}" hint-placeholder-val="{{ true }}">
+          <p style="font-size: 14px; color: #44546A; line-height: 1.5">No unsaved changes. The rules below are the saved rules for this tournament.</p>
+        </sc-if>
+        <sc-for list="{{changes}}" as="ch" hint-placeholder-count="2">
+          <div style="display: grid; grid-template-columns: minmax(120px, 0.8fr) minmax(0, 2fr); gap: 4px 14px; padding-top: 10px; border-top: 1px solid #E1E6EE">
+            <strong style="font-size: 14px">{{ch.label}}</strong>
+            <div style="display: flex; flex-direction: column; gap: 3px">
+              <span style="font-size: 13px; color: #44546A">Was: {{ch.from}}</span>
+              <span style="font-size: 14px; font-weight: 600">Now: {{ch.to}}</span>
+              <sc-if value="{{ch.risky}}"><span><span class="pm-tag pm-tag--warn">Can change published results</span></span></sc-if>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{needReason}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 12px 14px; border-radius: 10px; background: #FFF1CF; border: 1px solid #E3B65B; display: flex; flex-direction: column; gap: 10px">
+            <p style="font-size: 14px; color: #6B4400; font-weight: 600; line-height: 1.5">The tournament is {{statusWord}}. These changes can move ranks, medals, points or Masters qualifiers that are already shown. Official results are recalculated, qualifiers already confirmed are marked stale, and the change is kept in the history with your reason.</p>
+            <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: #33445C">
+              <span>REASON FOR CHANGE</span>
+              <input class="pm-in" value="{{reason}}" onInput="{{setReason}}" aria-label="Reason for changing the rules">
+            </label>
+          </div>
+        </sc-if>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button class="pm-btn pm-btn--pri" disabled="{{saveOff}}" onClick="{{doSave}}">Save rules</button>
+          <button class="pm-btn" disabled="{{discardOff}}" onClick="{{doDiscard}}">Discard changes</button>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{showSummary}}" hint-placeholder-val="{{ false }}">
+      <section class="rl-card" style="padding: 0; overflow: hidden">
+        <div style="padding: 16px 16px 4px">
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">{{summaryTitle}}</h2>
+          <p style="font-size: 14px; color: #44546A; margin-top: 4px; line-height: 1.5">{{summaryNote}}</p>
+        </div>
+        <sc-for list="{{sumGroups}}" as="g" hint-placeholder-count="3">
+          <div>
+            <div style="padding: 10px 12px; background: #F1F3F7; border-top: 1px solid #D5DBE4"><strong style="font-size: 12px; letter-spacing: 0.6px; color: #33445C">{{g.title}}</strong></div>
+            <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
+              <div class="{{r.cls}}">
+                <strong>{{r.label}}</strong>
+                <span>{{r.val}}</span>
+                <sc-if value="{{r.changed}}"><span class="pm-tag pm-tag--warn">Changed</span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <!-- STEP 6: SCHEDULE AND LANES -->
+    <sc-if value="{{isSchedule}}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{hasConflicts}}" hint-placeholder-val="{{ false }}">
+        <div style="padding: 14px 16px; border-radius: 10px; background: #FDECEA; border: 1px solid #E5887E; color: #6B130B">
+          <p style="font-size: 15px; line-height: 1.45"><strong>{{conflictCount}} schedule problem(s).</strong> Blocks marked below share lanes at the same start time, or use lanes this venue does not have.</p>
+        </div>
+      </sc-if>
+
+      <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+        <div>
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Block groupings</h2>
+          <p style="font-size: 15px; color: #44546A; margin-top: 4px; line-height: 1.45">Categories in the same group share one block when the venue has enough lanes, and bowl at the same time on separate lanes. "Own block" means the category bowls alone. The lane draw and score entry read these groupings. Group numbers are saved with the rules.</p>
+        </div>
+        <sc-if value="{{noCatsHere}}" hint-placeholder-val="{{ false }}">
+          <p style="font-size: 14px; color: #44546A">Add categories in step 2 first.</p>
+        </sc-if>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <sc-for list="{{grpRows}}" as="gr" hint-placeholder-count="3">
+            <div style="border: 1px solid #C3CBD8; border-radius: 10px; padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px">
+              <strong style="flex: 1 1 160px; font-size: 16px; overflow-wrap: anywhere">{{gr.name}}</strong>
+              <sc-for list="{{gr.cols}}" as="gc" hint-placeholder-count="2">
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #33445C">{{gc.head}}</span>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <button class="pm-step" onClick="{{gc.dec}}" disabled="{{gc.decOff}}" aria-label="{{gc.decAria}}">−</button>
+                    <span style="min-width: 92px; text-align: center; font-size: 15px; font-weight: 600">{{gc.label}}</span>
+                    <button class="pm-step" onClick="{{gc.inc}}" disabled="{{gc.incOff}}" aria-label="{{gc.incAria}}">+</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button class="pm-btn" onClick="{{autoGroup}}" disabled="{{groupOff}}">Group in pairs</button>
+          <button class="pm-btn pm-btn--pri" onClick="{{buildBlocks}}" disabled="{{groupOff}}">Build blocks from groupings</button>
+        </div>
+        <sc-if value="{{buildAsk}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 14px 16px; border-radius: 10px; background: #FFF8EA; border: 2px solid #0E1A2B; display: flex; flex-direction: column; gap: 10px">
+            <strong style="font-size: 16px">Replace the {{blocksTotal}} blocks you have now?</strong>
+            <p style="font-size: 14px; color: #33445C; line-height: 1.45">The schedule is rebuilt from the groupings, the rules and the venue lanes. Any block you edited by hand is lost.</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <button class="pm-btn pm-btn--pri" onClick="{{confirmBuild}}">Replace blocks</button>
+              <button class="pm-btn" onClick="{{cancelBuild}}">Cancel</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{buildNote}}" hint-placeholder-val="{{ false }}">
+          <p style="font-size: 14px; font-weight: 600; color: #0B5A38; line-height: 1.45">{{buildNote}}</p>
+        </sc-if>
+        <p style="font-size: 13px; color: #44546A; line-height: 1.45">{{grpSummary}}</p>
+      </section>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 10px" role="group" aria-label="Tournament days">
+        <sc-for list="{{days}}" as="d" hint-placeholder-count="3">
+          <button class="{{d.cls}}" onClick="{{d.pick}}" aria-pressed="{{d.on}}">
+            <span style="display: block; font-size: 15px; font-weight: 700; text-align: left">{{d.label}}</span>
+            <span style="display: block; font-size: 13px; text-align: left">{{d.date}}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+        <section style="flex: 1 1 380px; min-width: 0; background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+            <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Blocks on {{curDayLabel}}</h2>
+            <button class="pm-btn pm-btn--pri" onClick="{{addBlock}}" disabled="{{addOff}}">+ Add block</button>
+          </div>
+
+          <sc-if value="{{noBlocks}}" hint-placeholder-val="{{ false }}">
+            <p style="padding: 24px 16px; text-align: center; border: 1px dashed #7C8AA0; border-radius: 10px; font-size: 15px; color: #44546A">{{emptyMsg}}</p>
+          </sc-if>
+
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <sc-for list="{{rows}}" as="b" hint-placeholder-count="3">
+              <button class="{{b.cls}}" onClick="{{b.pick}}" aria-pressed="{{b.on}}">
+                <span style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px">
+                  <span style="font-size: 17px; font-weight: 700">{{b.name}} · {{b.start}}</span>
+                  <span style="font-size: 14px; font-weight: 600; color: #33445C">Lanes {{b.lanesLabel}} · {{b.capacity}} bowlers</span>
+                </span>
+                <span style="display: block; margin-top: 6px; font-size: 15px; color: #33445C">{{b.catName}} · {{b.evName}} · {{b.games}} games</span>
+                <sc-if value="{{b.hasIssue}}" hint-placeholder-val="{{ false }}">
+                  <span style="display: block; margin-top: 8px; font-size: 14px; font-weight: 700; color: #B42318">{{b.issue}}</span>
+                </sc-if>
+              </button>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="flex: 1 1 300px; min-width: 0; background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Edit block</h2>
+          <sc-if value="{{noSel}}" hint-placeholder-val="{{ false }}">
+            <p style="font-size: 15px; color: #44546A">Select a block on the left to edit it.</p>
+          </sc-if>
+          <sc-if value="{{hasSel}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: 14px">
+              <div>
+                <label class="pm-lbl" for="b-name">Block name</label>
+                <input class="pm-in" id="b-name" type="text" value="{{sb.name}}" onInput="{{sb.onName}}" disabled="{{ro}}">
+              </div>
+              <div>
+                <label class="pm-lbl" for="b-start">Start time</label>
+                <input class="pm-in" id="b-start" type="time" value="{{sb.start}}" onInput="{{sb.onStart}}" disabled="{{ro}}">
+              </div>
+              <div>
+                <label class="pm-lbl" for="b-cat">Category</label>
+                <select class="pm-in" id="b-cat" value="{{sb.catId}}" onChange="{{sb.onCat}}" disabled="{{ro}}">
+                  <sc-for list="{{catOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for>
+                </select>
+              </div>
+              <div>
+                <label class="pm-lbl" for="b-ev">Event</label>
+                <select class="pm-in" id="b-ev" value="{{sb.evKey}}" onChange="{{sb.onEvent}}" disabled="{{ro}}">
+                  <sc-for list="{{evOpts}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.label}}</option></sc-for>
+                </select>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 12px">
+                <div style="flex: 1 1 90px; min-width: 0">
+                  <label class="pm-lbl" for="b-from">First lane</label>
+                  <input class="pm-in" id="b-from" type="number" value="{{sb.from}}" onInput="{{sb.onFrom}}" disabled="{{ro}}">
+                </div>
+                <div style="flex: 1 1 90px; min-width: 0">
+                  <label class="pm-lbl" for="b-to">Last lane</label>
+                  <input class="pm-in" id="b-to" type="number" value="{{sb.to}}" onInput="{{sb.onTo}}" disabled="{{ro}}">
+                </div>
+                <div style="flex: 1 1 90px; min-width: 0">
+                  <label class="pm-lbl" for="b-games">Games</label>
+                  <input class="pm-in" id="b-games" type="number" value="{{sb.games}}" onInput="{{sb.onGames}}" disabled="{{ro}}">
+                </div>
+              </div>
+              <p style="font-size: 14px; color: #33445C">{{gamesHint}}</p>
+              <button class="pm-btn pm-btn--ghost" onClick="{{removeBlock}}" disabled="{{ro}}">Remove this block</button>
+            </div>
+          </sc-if>
+        </section>
+
+      <section style="flex: 2 1 420px; min-width: 0; background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+        <div>
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Lane map · {{curDayLabel}}</h2>
+          <p style="font-size: 15px; color: #44546A; margin-top: 4px">{{lanesN}} lanes at {{t.venue}}. The selected block is highlighted.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 6px">
+          <sc-for list="{{laneCells}}" as="l" hint-placeholder-count="24">
+            <span class="{{l.cls}}">{{l.n}}</span>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; color: #33445C">
+          <span style="display: inline-flex; align-items: center; gap: 8px"><span class="pm-lane pm-lane--sel" style="width: 28px; height: 20px"></span>Selected block</span>
+          <span style="display: inline-flex; align-items: center; gap: 8px"><span class="pm-lane pm-lane--oth" style="width: 28px; height: 20px"></span>Used by another block today</span>
+          <span style="display: inline-flex; align-items: center; gap: 8px"><span class="pm-lane" style="width: 28px; height: 20px"></span>Free</span>
+        </div>
+      </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showReadyMsg}}" hint-placeholder-val="{{ false }}">
+      <p style="font-size: 14px; font-weight: 600; color: #B42318; text-align: right">{{readyMsg}}</p>
+    </sc-if>
+
+    <!-- Footer nav -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px">
+      <button class="pm-btn" onClick="{{goBack}}" disabled="{{isFirst}}">Back</button>
+      <button class="pm-btn pm-btn--pri" onClick="{{goNext}}" disabled="{{nextOff}}">{{nextLabel}}</button>
+    </div>
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F2A93B","options":["#F2A93B","#2FB5A0","#E8594F","#6C8CFF"]}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.ST = { 'Draft': 'draft', 'Registration open': 'regopen', 'Registration closed': 'regclosed', 'Live': 'live', 'Paused': 'paused', 'Ended': 'ended' };
+    this.STL = { draft: 'Draft', regopen: 'Registration open', regclosed: 'Registration closed', live: 'Live', paused: 'Paused', ended: 'Ended' };
+    this._tm = null; this._busy = false; this._again = false; this.reasonText = '';
+    this.state = {
+      tid: 0, gate: 'Loading…', gateRetry: false, errText: '', errReload: false, sync: 'idle', syncMsg: '', user: null,
+      tab: 'details', switcherOpen: false, day: 1, sel: '', saved: false, pubMsg: false, newCat: '', copyFrom: '',
+      rsec: 'sc', reason: '', rMsg: '', buildAsk: false, buildNote: '',
+      pendingTo: '', stReason: '', stNote: '', newCode: '', newTeam: '', newMn: '', newMe: '', teamNote: '',
+      tours: [this.blankTour()]
+    };
+  }
+
+  // ---------- server connection ----------
+  componentDidMount() {
+    const sess = window.PM && PM.getSession();
+    if (!sess || !sess.user || sess.user.role !== 'admin') { location.replace('login.html'); return; }
+    this.setState({ user: sess.user });
+    this._bu = (e) => { if (this.hasPending()) { e.preventDefault(); e.returnValue = ''; } };
+    window.addEventListener('beforeunload', this._bu);
+    this.init();
+  }
+  componentWillUnmount() { clearTimeout(this._tm); window.removeEventListener('beforeunload', this._bu); }
+  hasPending() {
+    const s = this.state, t = s.tours[s.tid];
+    if (!t) return false;
+    if (!t.id) return !!(t.name || t.venue);
+    return this._busy || s.sync === 'pending' || s.sync === 'error' || s.sync === 'invalid';
+  }
+  signOut() { PM.api('auth.logout').catch(() => {}).finally(() => { PM.setSession(null); location.replace('login.html'); }); }
+  authFail(e) {
+    if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { location.replace('login.html?expired=1'); return true; }
+    return false;
+  }
+  blankTour() {
+    const t = { id: '', code: '', codeAuto: true, name: '', edition: String(new Date().getFullYear()), notes: '', venue: '', city: '', lanes: '', start: '', end: '', regOpen: '', regClose: '',
+      status: 'Draft', cfg: this.baseCfg(), blocks: [], nid: 1, teams: [], limit: 6, statusLog: [], loaded: true, base: '', srv: {}, usage: { teams: {}, categories: {}, blocks: {}, events: {} } };
+    t.savedCfg = t.cfg; t.savedBlocks = t.blocks; t.savedDetails = this.detailsOf(t);
+    return t;
+  }
+  stubTour(row) {
+    return Object.assign(this.blankTour(), { id: row.tournament_id, code: row.code || '', codeAuto: false, name: row.name || '', status: this.STL[row.status] || 'Draft',
+      start: row.start_date || '', end: row.end_date || '', venue: row.venue || '', loaded: false });
+  }
+  suggestCode(name, ed) {
+    const words = String(name || '').toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter((w) => w && !/^\d+$/.test(w));
+    let c = words.length === 1 ? words[0].slice(0, 6) : words.map((w) => w[0]).join('').slice(0, 6);
+    const y = String(ed || '').replace(/\D/g, '').slice(-2);
+    return (c + y).slice(0, 10);
+  }
+  async init(wantId) {
+    this.setState({ gate: 'Loading…', gateRetry: false });
+    try {
+      const r = await PM.api('db.list', { table: 'Tournaments' });
+      const rows = r.rows.slice().sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      const want = wantId || PM.pref('tid');
+      const pick = rows.find((x) => x.tournament_id === want) || rows[0];
+      let tours = rows.map((x) => this.stubTour(x));
+      if (!tours.length) tours = [this.blankTour()];
+      const tid = pick ? Math.max(0, tours.findIndex((x) => x.id === pick.tournament_id)) : 0;
+      this.setState({ tours, tid, sync: 'idle', errText: '', errReload: false });
+      if (pick) await this.loadTour(pick.tournament_id);
+      this.setState({ gate: '' });
+    } catch (e) {
+      if (this.authFail(e)) return;
+      this.setState({ gate: (e && e.message) || 'Could not load the tournaments.', gateRetry: true });
+    }
+  }
+  async loadTour(id) {
+    const d = await PM.api('setup.load', { tournament_id: id });
+    const t = this.buildTour(d);
+    this.setState((st) => ({ tours: st.tours.map((x) => (x.id === id ? t : x)), sel: '', day: 1, sync: 'idle', syncMsg: '', errText: '', errReload: false }));
+    PM.pref('tid', id);
+  }
+  buildTour(d) {
+    const tr = d.tournament, cin = tr.cfg_json || {}, meta = cin.meta || {};
+    const cfg = Object.assign(this.baseCfg(), cin);
+    delete cfg.meta;
+    cfg.scale = (cfg.scale || []).map(String);
+    cfg.lanes = tr.lanes || cfg.lanes || 24;
+    cfg.perLane = tr.per_lane || cfg.perLane || 2;
+    cfg.cats = d.categories.map((c) => ({ id: c.category_id, name: c.name, games: (c.games_json && c.games_json.games) || 6,
+      ev: (c.games_json && c.games_json.ev) || { s: null, d: null }, mq: c.masters_qualifiers == null ? 8 : c.masters_qualifiers }));
+    const teams = d.teams.map((k) => ({ id: k.team_id, code: k.code, name: k.name, mn: k.manager_name || '', me: k.manager_email || '', off: k.status === 'withdrawn' }));
+    const who = (a) => a || 'Admin';
+    const secName = { tournament: 'details and rules', events: 'events', categories: 'categories', blocks: 'schedule', teams: 'teams' };
+    const t = Object.assign(this.blankTour(), {
+      id: tr.tournament_id, code: tr.code || '', codeAuto: false, name: tr.name || '', edition: meta.edition == null ? '' : meta.edition, notes: meta.notes || '', venue: tr.venue || '', city: meta.city || '',
+      lanes: tr.lanes ? String(tr.lanes) : '', start: tr.start_date || '', end: tr.end_date || '', regOpen: meta.regOpen || '', regClose: meta.regClose || '',
+      status: this.STL[tr.status] || 'Draft', cfg, teams, limit: Math.min(20, Math.max(1, meta.limit || (d.teams[0] && d.teams[0].player_limit) || 6)), base: tr.updated_at, usage: d.usage, loaded: true, srv: {},
+      blocks: d.blocks.map((b) => ({ id: b.block_id, day: b.day || 1, name: b.name, start: b.start_time || '09:00', catId: b.category_id, evKey: b.event_key, from: b.lane_from || 1, to: b.lane_to || 1, games: b.games || 1 })),
+      statusLog: d.history.filter((h) => h.action !== 'setup_save' || h.reason).map((h) => ({ at: PM.fmtTime(h.at), who: who(h.actor),
+        text: h.action === 'setup_save' ? 'Setup saved (' + Object.keys(h.after || {}).map((k) => secName[k] || k).join(', ') + ').' + (h.reason ? ' Reason: ' + h.reason + '.' : '')
+          : (this.STL[(h.before || {}).status] || '?') + ' to ' + (this.STL[(h.after || {}).status] || '?') + '.' + (h.reason ? ' Reason: ' + h.reason + '.' : '') }))
+    });
+    t.savedCfg = t.cfg; t.savedBlocks = t.blocks; t.savedDetails = this.detailsOf(t);
+    return t;
+  }
+
+  // ---------- what gets saved ----------
+  detailsOf(x) { return { name: x.name, code: x.code, edition: x.edition, notes: x.notes, venue: x.venue, city: x.city, lanes: String(x.lanes || ''), start: x.start, end: x.end, regOpen: x.regOpen, regClose: x.regClose }; }
+  started(st) { return st === 'Live' || st === 'Paused' || st === 'Ended'; }
+  // Before Live the server mirrors what you see. From Live, it mirrors the last saved (reviewed) rules.
+  commitView(x) {
+    const sd = this.started(x.status);
+    return { details: sd ? x.savedDetails : this.detailsOf(x), cfg: sd ? x.savedCfg : x.cfg, blocks: sd ? x.savedBlocks : x.blocks, teams: x.teams, limit: x.limit };
+  }
+  sectionsOf(v) {
+    const d = v.details, c = v.cfg, tv = c.tev || [];
+    const ln = parseInt(d.lanes, 10);
+    const cfgOut = JSON.parse(JSON.stringify(c));
+    delete cfgOut.cats;
+    cfgOut.scale = (c.scale || []).map((n) => parseInt(n, 10) || 0);
+    cfgOut.lanes = isNaN(ln) ? 0 : ln;
+    cfgOut.meta = { edition: d.edition, notes: d.notes, city: d.city, regOpen: d.regOpen, regClose: d.regClose, limit: v.limit };
+    const ev = []; let o = 0;
+    const push = (k, name, size, baker) => ev.push({ event_key: k, name, size, baker, enabled: !!c.ev[k], counts_all_events: !!(c.allIn && c.allIn[k]), multiplier: c.mult && c.mult[k] != null ? c.mult[k] : 1, sort_order: ++o });
+    push('s', 'Singles', 1, false); push('d', 'Doubles', 2, false);
+    tv.forEach((x) => push(x.k, x.name || x.k, x.size, !!x.baker));
+    push('a', 'All Events', 1, false); push('m', 'Masters', 1, false);
+    return {
+      tournament: { name: String(d.name || '').trim(), code: d.code, start_date: d.start, end_date: d.end, venue: d.venue, lanes: isNaN(ln) ? '' : ln, per_lane: c.perLane, cfg: cfgOut },
+      events: ev,
+      categories: c.cats.map((k, i) => ({ category_id: k.id, name: k.name, sort_order: i + 1, games_json: { games: k.games, ev: k.ev }, masters_qualifiers: k.mq })),
+      blocks: v.blocks.map((b) => ({ block_id: b.id, day: b.day, name: b.name, start_time: b.start, category_id: b.catId, event_key: b.evKey, from_game: 1, to_game: b.games, games: b.games, lane_from: b.from, lane_to: b.to })),
+      teams: v.teams.map((k) => ({ team_id: k.id, code: k.code, name: k.name, manager_name: k.mn || '', manager_email: k.me || '', player_limit: v.limit, status: k.off ? 'withdrawn' : 'active' }))
+    };
+  }
+  remapView(v, m) {
+    const f = (id) => (m[id] || id);
+    const g = v.cfg.groups || {};
+    const cfg = Object.assign({}, v.cfg, { cats: v.cfg.cats.map((c) => Object.assign({}, c, { id: f(c.id) })), groups: Object.keys(g).reduce((o, k) => { o[k] = (g[k] || []).map((gr) => gr.map(f)); return o; }, {}) });
+    return Object.assign({}, v, { cfg, blocks: v.blocks.map((b) => Object.assign({}, b, { id: f(b.id), catId: f(b.catId) })), teams: v.teams.map((k) => Object.assign({}, k, { id: f(k.id) })) });
+  }
+  remapTour(x, m) {
+    const a = this.remapView({ cfg: x.cfg, blocks: x.blocks, teams: x.teams }, m);
+    const b = this.remapView({ cfg: x.savedCfg, blocks: x.savedBlocks, teams: x.teams }, m);
+    return Object.assign({}, x, { cfg: a.cfg, blocks: a.blocks, teams: a.teams, savedCfg: b.cfg, savedBlocks: b.blocks });
+  }
+  detailsIssue(d) {
+    if (!String(d.name || '').trim()) return 'Enter a tournament name to save.';
+    if (!/^[A-Z0-9]{2,10}$/.test(d.code || '')) return 'Enter a tournament code (2 to 10 letters or digits) to save.';
+    if (d.start && d.end && d.end < d.start) return 'Fix the dates to save: the last day is before the first day.';
+    const ln = parseInt(d.lanes, 10);
+    if (d.lanes !== '' && (isNaN(ln) || ln < 1 || ln > 60)) return 'Lanes must be between 1 and 60 to save.';
+    return '';
+  }
+  issueOf(v) {
+    const di = this.detailsIssue(v.details);
+    if (di) return di;
+    const ln = parseInt(v.details.lanes, 10) || 60, EM = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    for (const k of v.teams) if (k.me && !EM.test(k.me)) return 'Fix the manager email for ' + k.code + ' to save.';
+    for (const b of v.blocks) {
+      if (!v.cfg.cats.some((c) => c.id === b.catId)) return 'Pick a category for ' + (b.name || 'a block') + ' to save.';
+      if (!b.name || !/^([01]\d|2[0-3]):[0-5]\d$/.test(b.start || '')) return 'Check the name and start time of ' + (b.name || 'a block') + ' to save.';
+      if (!(b.from >= 1) || b.to < b.from || b.to > ln) return 'Check the lane numbers of ' + b.name + ' to save.';
+      if (!(b.games >= 1 && b.games <= 12)) return 'Games in ' + b.name + ' must be 1 to 12 to save.';
+    }
+    return '';
+  }
+
+  // ---------- saving ----------
+  queueSave(delay) {
+    clearTimeout(this._tm);
+    this._tm = setTimeout(() => this.flush(), delay == null ? 1200 : delay);
+    if (this.state.sync !== 'pending') this.setState({ sync: 'pending', syncMsg: '' });
+  }
+  async flush() {
+    clearTimeout(this._tm);
+    if (this._busy) { this._again = true; return true; }
+    const t0 = this.state.tours[this.state.tid];
+    if (!t0 || !t0.id || !t0.loaded) return true;
+    const view = this.commitView(t0), secs = this.sectionsOf(view);
+    const changed = Object.keys(secs).filter((k) => JSON.stringify(secs[k]) !== (t0.srv || {})[k]);
+    if (!changed.length) { if (this.state.sync !== 'saved') this.setState({ sync: 'saved', syncMsg: '' }); return true; }
+    const issue = this.issueOf(view);
+    if (issue) { this.setState({ sync: 'invalid', syncMsg: issue }); return false; }
+    this._busy = true;
+    this.setState({ sync: 'saving', syncMsg: '' });
+    const params = { tournament_id: t0.id, base_updated_at: t0.base, reason: this.reasonText || '' };
+    changed.forEach((k) => { params[k] = secs[k]; });
+    let ok = false;
+    try {
+      const res = await PM.api('setup.save', params);
+      const map = res.idmap || {};
+      const rs = this.sectionsOf(this.remapView(view, map));
+      const srvNew = {};
+      changed.forEach((k) => { srvNew[k] = JSON.stringify(rs[k]); });
+      this.setState((st) => ({ sync: 'saved', syncMsg: '', errText: '', errReload: false, sel: map[st.sel] || st.sel,
+        tours: st.tours.map((x) => (x.id === t0.id ? Object.assign(this.remapTour(x, map), { base: res.updated_at, usage: res.usage || x.usage, srv: Object.assign({}, x.srv || {}, srvNew) }) : x)) }));
+      this.reasonText = '';
+      ok = true;
+    } catch (e) {
+      if (this.authFail(e)) return false;
+      const c = e && e.code;
+      if (c === 'conflict' || c === 'in_use') this.setState({ sync: 'error', syncMsg: 'Not saved.', errText: e.message, errReload: true });
+      else this.setState({ sync: 'error', syncMsg: (e && e.message) || 'Could not save.' });
+      if (c === 'network') this._tm = setTimeout(() => this.flush(), 8000);
+    } finally { this._busy = false; }
+    if (this._again) { this._again = false; return this.flush(); }
+    return ok;
+  }
+  async createTour() {
+    const idx = this.state.tid, t = this.state.tours[idx];
+    if (!t || t.id) return;
+    const view = this.commitView(t), secs = this.sectionsOf(view), issue = this.issueOf(view);
+    if (issue) { this.setState({ errText: issue, errReload: false }); return; }
+    this.setState({ sync: 'saving', syncMsg: '', errText: '' });
+    try {
+      const x = secs.tournament;
+      const r = await PM.api('db.create', { table: 'Tournaments', row: { name: x.name, code: x.code.toUpperCase(), start_date: x.start_date, end_date: x.end_date, venue: x.venue, lanes: x.lanes, per_lane: x.per_lane, cfg_json: x.cfg } });
+      const row = r.row;
+      this.setState((st) => ({ tours: st.tours.map((q, i) => (i === idx ? Object.assign({}, q, { id: row.tournament_id, base: row.updated_at, srv: {}, codeAuto: false }) : q)), sync: 'pending' }));
+      PM.pref('tid', row.tournament_id);
+      this.queueSave(50);
+    } catch (e) {
+      if (this.authFail(e)) return;
+      this.setState({ sync: 'error', syncMsg: 'Not created.', errText: e.code === 'duplicate' ? 'That tournament code is already used. Choose another.' : ((e && e.message) || 'Could not create the tournament.'), errReload: false });
+    }
+  }
+  async setStatus(to, reason) {
+    const okf = await this.flush();
+    if (!okf) return 'Fix the save problem shown at the top of the page first.';
+    const tt = this.state.tours[this.state.tid];
+    if (!tt || !tt.id) return 'Create the tournament on Details first.';
+    try {
+      const r = await PM.api('db.update', { table: 'Tournaments', key: { tournament_id: tt.id }, patch: { status: this.ST[to], pause_reason: to === 'Paused' ? (reason || '') : '' }, reason: reason || '' });
+      const from = tt.status;
+      this.setState((st) => ({ tours: st.tours.map((x) => (x.id === tt.id ? Object.assign({}, x, { status: to, base: r.row.updated_at,
+        statusLog: [{ at: PM.fmtTime(new Date().toISOString()), who: 'You', text: from + ' to ' + to + '.' + (reason ? ' Reason: ' + reason + '.' : '') }].concat(x.statusLog || []).slice(0, 8) }) : x)) }));
+      return '';
+    } catch (e) {
+      if (this.authFail(e)) return 'x';
+      return (e && e.message) || 'Could not change the status.';
+    }
+  }
+  async pickTour(i) {
+    const cur = this.state.tours[this.state.tid];
+    if (cur && cur.id && i !== this.state.tid) {
+      const ok = await this.flush();
+      if (!ok && !window.confirm('Some changes are not saved yet. Switch tournament anyway?')) return;
+    }
+    const t = this.state.tours[i];
+    this.setState({ tid: i, switcherOpen: false, tab: 'details', day: 1, sel: '', saved: false, pubMsg: false, newCat: '', copyFrom: '', errText: '', errReload: false, sync: 'idle', syncMsg: '' });
+    if (t && t.id && !t.loaded) {
+      this.setState({ gate: 'Loading…', gateRetry: false });
+      try { await this.loadTour(t.id); this.setState({ gate: '' }); }
+      catch (e) { if (!this.authFail(e)) this.setState({ gate: (e && e.message) || 'Could not load this tournament.', gateRetry: true }); }
+    } else if (t && t.id) PM.pref('tid', t.id);
+  }
+  newTour() {
+    this.setState((st) => {
+      const i = st.tours.findIndex((x) => !x.id);
+      if (i >= 0) return { tid: i, switcherOpen: false, tab: 'details' };
+      return { tours: st.tours.concat([this.blankTour()]), tid: st.tours.length, switcherOpen: false, tab: 'details', day: 1, sel: '', pubMsg: false, newCat: '', copyFrom: '', sync: 'idle', errText: '' };
+    });
+  }
+  reload() {
+    const tt = this.state.tours[this.state.tid];
+    this.setState({ errText: '', errReload: false, sync: 'idle', syncMsg: '' });
+    this.reasonText = '';
+    this.init(tt && tt.id);
+  }
+
+  // One rules object per tournament. Lane Draw, Score Entry, Results and Public read the same shape (the shared kit).
+  baseCfg() {
+    return {
+      ev: { s: true, d: true, t: false, g: true, a: true, m: true },
+      tev: [{ k: 't', name: 'Trios', size: 3, baker: false }, { k: 'g', name: 'Group of 4', size: 4, baker: true }],
+      cats: [],
+      allIn: { s: true, d: true, t: true, g: false },
+      handicap: false, hcPct: 80, hcBase: 200,
+      tb: ['last', 'last2'], needRoll: true,
+      pts: true, scale: ['10', '8', '6', '5', '4', '3', '2', '1'], mult: { s: 1, d: 1, t: 1, g: 1, a: 1, m: 1 }, medals: 3, teamRule: 'points', indRule: 'medals',
+      lanes: 24, perLane: 2, movePair: 2, moveTeam: 1, moveEvery: 2, moveDir: 'right',
+      mGames: 0, mCarry: 'none',
+      sOn: false, sN: 3, sGames: 1, sSeed: 'masters',
+      groups: { sd: [], t: [], g: [] }
+    };
+  }
+
+  presets() {
+    const casual = Object.assign(this.baseCfg(), {
+      ev: { s: true, d: true, t: true, g: false, a: false, m: false },
+      tev: [{ k: 't', name: 'Trios', size: 3, baker: false }, { k: 'g', name: 'Group of 4', size: 4, baker: false }],
+      handicap: true, hcPct: 80, hcBase: 200, tb: ['best'], needRoll: false, pts: false,
+      movePair: 0, moveTeam: 0, moveEvery: 1, sOn: false
+    });
+    const tour = Object.assign(this.baseCfg(), {
+      tb: ['best', 'last', 'first'],
+      ev: { s: true, d: true, t: true, g: true, a: true, m: true }, allIn: { s: true, d: true, t: true, g: false },
+      scale: ['30', '24', '20', '17', '15', '13', '11', '9', '7', '5', '3', '1'], mult: { s: 1, d: 1, t: 1, g: 1, a: 2, m: 2 },
+      movePair: 2, moveTeam: 2, moveEvery: 1, moveDir: 'alt', sOn: true, sN: 5, sGames: 1
+    });
+    return [
+      { id: 'mssm', label: 'MSSM school tournament', games: null, text: 'Singles, Doubles and a Group of 4 played as Baker (Trios is available but off), scratch ranking, Masters for the top qualifiers, points 10 to 1, pairs move 2 lanes and teams 1 lane every 2 games. Your games per category are kept.', cfg: this.baseCfg() },
+      { id: 'casual', label: 'Casual league day', games: 3, text: 'Singles, Doubles and Trios with individual scores (no Baker), handicap on (80% of 200), best game as the only tie-break, tied places share the rank, no points, no movement, no All Events, Masters or stepladder. Every category is set to 3 games.', cfg: casual },
+      { id: 'tour', label: 'Open tour (illustrative)', games: 6, text: 'All events including Trios and a Baker Group of 4, 6 games, three tie-breaks, a 12-place points scale with a double multiplier for All Events and Masters, a top 5 stepladder, pairs and teams move 2 lanes every game, alternating. Every category is set to 6 games. Values are examples, not an official rulebook.', cfg: tour }
+    ];
+  }
+
+  renderVals() {
+    const s = this.state;
+    const t = s.tours[s.tid] || s.tours[0];
+    const blocks = t.blocks;
+    const role = 'Admin';
+    const ro = false;
+    const canEdit = true;
+    const canCreate = true;
+    const roleNote = '';
+    const accent = this.props.accent ?? '#F2A93B';
+    const roleCards = [], matrix = [];
+    const signIn = () => {};
+    const signOut = () => this.signOut();
+
+    // ---------- helpers ----------
+    const started = (st) => ['Live', 'Paused', 'Ended'].indexOf(st) >= 0;
+    const updT = (fn) => { this.setState((st) => ({ saved: false, tours: st.tours.map((x, i) => { if (i !== st.tid) return x; const y = fn(x); return started(y.status) ? y : Object.assign({}, y, { savedCfg: y.cfg, savedBlocks: y.blocks, savedDetails: this.detailsOf(y) }); }) })); this.queueSave(); };
+    const setT = (k) => (e) => { const v = e.target.value; updT((x) => Object.assign({}, x, { [k]: v })); };
+    const setName = (k) => (e) => { const v = e.target.value; updT((x) => { const y = Object.assign({}, x, { [k]: v }); if (!y.id && y.codeAuto !== false) y.code = this.suggestCode(y.name, y.edition); return y; }); };
+    const setCode = (e) => { const v = String(e.target.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10); updT((x) => Object.assign({}, x, { code: v, codeAuto: false })); };
+    const patchB = (id, patch) => updT((x) => Object.assign({}, x, { blocks: x.blocks.map((b) => b.id === id ? Object.assign({}, b, patch) : b) }));
+    const num = (e) => { const v = parseInt(e.target.value, 10); return isNaN(v) ? 0 : v; };
+
+    // ---------- dates and days ----------
+    const ms = (iso) => iso ? Date.parse(iso + 'T00:00:00Z') : NaN;
+    const a = ms(t.start), z = ms(t.end);
+    const dateErr = !isNaN(a) && !isNaN(z) && z < a;
+    let daysN = 1;
+    if (!isNaN(a) && !isNaN(z) && z >= a) daysN = Math.min(7, Math.round((z - a) / 864e5) + 1);
+    const fmt = (m) => new Date(m).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+    const lanesN = Math.max(1, Math.min(60, parseInt(t.lanes, 10) || 1));
+    const curDay = Math.min(s.day, daysN);
+    const curDayLabel = 'Day ' + curDay;
+
+    // ---------- tournaments ----------
+    const stClass = (st) => 'pm-st ' + (st === 'Live' ? 'pm-st--live' : st === 'Paused' ? 'pm-st--warn' : st === 'Ended' ? 'pm-st--end' : (st === 'Draft' || st === 'Registration closed') ? 'pm-st--draft' : 'pm-st--open');
+    const tourList = s.tours.map((x, i) => ({
+      name: x.name || 'Untitled tournament',
+      role: role,
+      status: x.status,
+      stCls: stClass(x.status),
+      dates: x.start ? fmt(ms(x.start)) + (x.end && x.end !== x.start ? ' to ' + fmt(ms(x.end)) : '') : 'No dates yet',
+      cls: 'pm-row' + (i === s.tid ? ' pm-row--on' : ''),
+      cur: i === s.tid ? 'true' : 'false',
+      pick: () => this.pickTour(i)
+    }));
+    const title = t.name ? t.name + (t.edition ? ' ' + t.edition : '') : 'Untitled tournament';
+
+    // ---------- rules and categories ----------
+    // One rules object per tournament (t.cfg). It has the same shape Lane Draw, Score Entry, Results and Public read.
+    const namesOf = (c) => { const o = { s: 'Singles', d: 'Doubles', a: 'All Events', m: 'Masters' }; (c.tev || []).forEach((x) => { o[x.k] = x.name || x.k; }); return o; };
+    const EVN = namesOf(t.cfg);
+    const evName = (k) => EVN[k] || '';
+    const TBN = { best: 'Best game', last: 'Last game', last2: 'Second-last game', first: 'First game' };
+    const MUL = '×';
+    const ord = (n) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n + 'th');
+    const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+    const cfg = Object.assign({}, t.cfg, { lanes: lanesN }); // venue lanes are set once, on Details
+    const savedCfg = Object.assign({}, t.savedCfg, { lanes: lanesN });
+    const cats = cfg.cats;
+    const catOf = (id) => cats.find((c) => c.id === id);
+    const effG = (c, k) => (c.ev[k] == null ? c.games : c.ev[k]);
+    const gamesFor = (c, k) => (!c ? 6 : k === 'm' ? (cfg.mGames || c.games) : effG(c, k));
+    const tevs = cfg.tev || [];
+    const tevKeys = tevs.map((x) => x.k);
+    const evAll = ['s', 'd'].concat(tevKeys);                     // events with games of their own
+    const evKeys = evAll.concat(['m']).filter((k) => cfg.ev[k]);
+    const tevOf = (k) => tevs.find((x) => x.k === k) || null;
+    const allKeysOf = (c) => ['s', 'd'].concat((c.tev || []).map((x) => x.k)).filter((k) => c.ev[k] && c.allIn && c.allIn[k] && !((c.tev || []).find((x) => x.k === k) || {}).baker);
+    const EV = [{ key: 's', name: 'Singles' }, { key: 'd', name: 'Doubles' }].concat(tevs.map((x) => ({ key: x.k, name: x.name }))).concat([{ key: 'm', name: 'Masters' }]);
+    const scoringStarted = ['Live', 'Paused', 'Ended'].indexOf(t.status) >= 0;
+    const statusWord = t.status.toLowerCase();
+    const updCfg = (patch) => updT((x) => Object.assign({}, x, { cfg: Object.assign({}, x.cfg, patch) }));
+    const updIn = (key, sub, val) => updT((x) => Object.assign({}, x, { cfg: Object.assign({}, x.cfg, { [key]: Object.assign({}, x.cfg[key], { [sub]: val }) }) }));
+    const updCat = (id, fn) => updT((x) => Object.assign({}, x, { cfg: Object.assign({}, x.cfg, { cats: x.cfg.cats.map((c) => (c.id === id ? fn(c) : c)) }) }));
+    const teams = t.teams || [];
+    const teamsN = Math.max(1, teams.length);
+    const pairs = cats.length * evKeys.length;
+    const ready = cats.length > 0 && evKeys.length > 0 && teams.length > 0;
+
+    // ---- describe a config as groups of rows (used for the summary and for diffing changes)
+    const describe = (c) => {
+      const NM = namesOf(c), tv = c.tev || [], ak = ['s', 'd'].concat(tv.map((x) => x.k)), mk = ak.concat(['a', 'm']);
+      const evs = mk.filter((k) => c.ev[k]).map((k) => NM[k]);
+      const qTot = c.cats.reduce((a, x) => a + x.mq, 0);
+      const gamesText = c.cats.length ? c.cats.map((x) => { const parts = ak.filter((k) => x.ev[k] != null && x.ev[k] !== x.games).map((k) => NM[k] + ' ' + x.ev[k]); return x.name + ' ' + x.games + (parts.length ? ' (' + parts.join(', ') + ')' : ''); }).join(' · ') : 'No categories yet';
+      const mqText = c.cats.map((x) => x.name + ' ' + x.mq).join(' · ');
+      const tbText = c.tb.map((k) => TBN[k]).concat(['Admin roll-off']).join(', then ');
+      const dir = c.moveDir === 'alt' ? 'alternating direction' : 'all toward higher lanes';
+      const move = c.movePair === 0 && c.moveTeam === 0 ? 'No movement' : 'Pairs ' + plural(c.movePair, 'lane') + ', teams ' + plural(c.moveTeam, 'lane') + ', every ' + plural(c.moveEvery, 'game') + ', ' + dir;
+      const gl = (list) => (list || []).map((g) => g.map((id) => { const k = c.cats.find((x) => x.id === id); return k ? k.name : ''; }).filter(Boolean)).filter((g) => g.length > 1).map((g) => g.join(' + '));
+      const sdG = gl(c.groups && c.groups.sd);
+      const grpText = 'Singles and Doubles: ' + (sdG.length ? sdG.join('; ') : 'each category in its own block') + tv.filter((x) => c.ev[x.k]).map((x) => { const g2 = gl(c.groups && c.groups[x.k]); return ' · ' + x.name + ': ' + (g2.length ? g2.join('; ') : 'each category in its own block'); }).join('');
+      const teamText = tv.length ? tv.map((x) => x.name + ' (' + x.size + ' bowlers, ' + (x.baker ? 'Baker, one team score per game' : 'individual scores, team total is the sum') + (c.ev[x.k] ? '' : ', off') + ')').join('; ') : 'No team events';
+      const inAll = ak.filter((k) => c.ev[k] && c.allIn && c.allIn[k]);
+      const allText = c.ev.a ? (inAll.filter((k) => !(tv.find((x) => x.k === k) || {}).baker).map((k) => NM[k]).join(' + ') || 'Nothing') + (inAll.some((k) => (tv.find((x) => x.k === k) || {}).baker) ? ' (Baker events are left out, their team scores cannot be split between bowlers)' : '') : 'Not played';
+      return [
+        { title: 'EVENTS AND GAMES', rows: [
+          { k: 'ev', label: 'Events on', val: evs.length ? evs.join(', ') : 'None', risky: false },
+          { k: 'games', label: 'Games per event', val: gamesText, risky: true },
+          { k: 'tev', label: 'Team events', val: teamText, risky: true },
+          { k: 'allIn', label: 'All Events counts', val: allText, risky: true }
+        ] },
+        { title: 'SCORING AND TIES', rows: [
+          { k: 'rank', label: 'Ranking', val: c.handicap ? 'Handicap: ' + c.hcPct + '% of ' + c.hcBase : 'Scratch pinfall', risky: true },
+          { k: 'tb', label: 'Tie-break order', val: tbText, risky: true },
+          { k: 'roll', label: 'Roll-off', val: c.needRoll ? 'Required on medal places and the Masters cut-off' : 'Not required, tied places share the rank', risky: true }
+        ] },
+        { title: 'POINTS AND MEDALS', rows: [
+          { k: 'pts', label: 'Points', val: c.pts ? 'Places 1 to ' + c.scale.length + ': ' + c.scale.join(', ') : 'Not used', risky: true },
+          { k: 'medals', label: 'Medal places', val: 'Top ' + c.medals, risky: true },
+          { k: 'mult', label: 'Event multipliers', val: c.pts ? mk.filter((k) => c.ev[k]).map((k) => NM[k] + ' ' + MUL + (c.mult[k] == null ? 1 : c.mult[k])).join(', ') : 'Not used', risky: true },
+          { k: 'teamRule', label: 'Team ranking', val: c.teamRule === 'medals' ? 'Medals first, points break ties' : 'Points first, medals break ties', risky: true },
+          { k: 'indRule', label: 'Player ranking', val: c.indRule === 'pinfall' ? 'Medals, then pinfall' : 'Medals only', risky: true }
+        ] },
+        { title: 'LANES AND SCHEDULE', rows: [
+          { k: 'lanes', label: 'Venue lanes', val: c.lanes + ' lanes, ' + plural(c.perLane, 'bowler') + ' per lane', risky: false },
+          { k: 'move', label: 'Lane movement', val: move, risky: false },
+          { k: 'groups', label: 'Block groupings', val: grpText, risky: false }
+        ] },
+        { title: 'MASTERS', rows: [
+          { k: 'mq', label: 'Qualifiers', val: c.ev.m ? (c.cats.length ? mqText + ' (' + qTot + ' in all)' : 'No categories yet') : 'Masters off', risky: true },
+          { k: 'mg', label: 'Games', val: c.ev.m ? (c.mGames === 0 ? 'Same as the category' : plural(c.mGames, 'game')) : 'Masters off', risky: false },
+          { k: 'mc', label: 'Carry-over', val: c.ev.m ? ({ none: 'None, everyone starts at 0', half: 'Half of All Events pinfall', full: 'Full All Events pinfall' })[c.mCarry] : 'Masters off', risky: true }
+        ] },
+        { title: 'STEPLADDER', rows: [
+          { k: 'sl', label: 'Stepladder', val: c.sOn ? 'Top ' + c.sN + ' per category, ' + plural(c.sGames, 'game') + ' per match, from the ' + (c.sSeed === 'masters' ? 'Masters' : 'All Events') + ' ranking' : 'Off', risky: false }
+        ] }
+      ];
+    };
+    const flat = (gs) => { const o = {}; gs.forEach((g) => g.rows.forEach((r) => { o[r.k] = r; })); return o; };
+    const curG = describe(cfg), savG = describe(savedCfg);
+    const curF = flat(curG), savF = flat(savG);
+    const changes = Object.keys(curF).filter((k) => curF[k].val !== savF[k].val).map((k) => ({ label: curF[k].label, from: savF[k].val, to: curF[k].val, risky: curF[k].risky }));
+    const dNow = this.detailsOf(t), dSav = t.savedDetails || dNow;
+    const DL = { name: 'Tournament name', code: 'Tournament code', edition: 'Edition', notes: 'Notes', venue: 'Bowling centre', city: 'City', lanes: 'Lanes available', start: 'First day', end: 'Last day', regOpen: 'Registration opens', regClose: 'Registration closes' };
+    Object.keys(DL).forEach((k) => { if (dNow[k] !== dSav[k]) changes.push({ label: DL[k], from: dSav[k] || '(empty)', to: dNow[k] || '(empty)', risky: true }); });
+    const bsig = (l) => JSON.stringify((l || []).map((b) => [b.id, b.day, b.name, b.start, b.catId, b.evKey, b.from, b.to, b.games]));
+    if (bsig(t.blocks) !== bsig(t.savedBlocks)) changes.push({ label: 'Schedule', from: plural((t.savedBlocks || []).length, 'block'), to: plural(t.blocks.length, 'block') + ' (changed)', risky: true });
+    const riskyChanged = changes.some((c) => c.risky);
+    const needReason = scoringStarted && riskyChanged;
+    const saveOff = ro || changes.length === 0 || (needReason && s.reason.trim().length < 3);
+
+    // ---- helpers to build controls
+    const chip = (label, on, fn) => ({ label, on, cls: 'pm-chip' + (on ? ' pm-chip--on' : ''), pick: fn });
+    const optChips = (cur, opts, fn) => opts.map((o) => chip(o[1], cur === o[0], () => fn(o[0])));
+    const onOff = (on, fn) => [chip('On', on, () => fn(true)), chip('Off', !on, () => fn(false))];
+    const field = (label, help, chips, risky) => ({ label, help, risky: !!risky, chips, stepper: false, inputs: [], val: '', dec: () => {}, inc: () => {}, decOff: false, incOff: false, decAria: '', incAria: '' });
+    const stp = (label, help, val, min, max, step, fmt, risky, fn) => ({
+      label, help, risky: !!risky, chips: [], stepper: true, inputs: [], val: fmt(val),
+      dec: () => { if (val - step >= min) fn(val - step); }, inc: () => { if (val + step <= max) fn(val + step); },
+      decOff: ro || val - step < min, incOff: ro || val + step > max,
+      decAria: 'Lower ' + label, incAria: 'Raise ' + label
+    });
+    const numS = (v) => String(v);
+    const toggleEv = (k, on) => updT((x) => {
+      const e = Object.assign({}, x.cfg.ev);
+      e[k] = on;
+      if (on && k === 'a') { e.s = true; e.d = true; }
+      if (on && k === 'm') { e.s = true; e.d = true; e.a = true; }
+      if (!on && (k === 's' || k === 'd')) { e.a = false; e.m = false; }
+      if (!on && k === 'a') e.m = false;
+      return Object.assign({}, x, { cfg: Object.assign({}, x.cfg, { ev: e }) });
+    });
+
+    // ---- settings blocks for the current step
+    const tab = s.tab, rsec = s.rsec;
+    let rBlocks = [], secNote = '';
+    let laneRows = [], laneNote = '', ladderRows = [], ladderNote = '';
+    let fitText = '', fitChip = '', fitCls = '';
+    const scaleIn = cfg.scale.map((v, i) => ({ label: ord(i + 1), val: v, aria: 'Points for ' + ord(i + 1) + ' place', set: (e) => { const nv = String((e && e.target && e.target.value) || '').replace(/[^0-9]/g, '').slice(0, 3); updT((x) => Object.assign({}, x, { cfg: Object.assign({}, x.cfg, { scale: x.cfg.scale.map((q, k) => (k === i ? nv : q)) }) })); } }));
+
+    if (tab === 'events') {
+      const evHelp = { s: 'Individual games.', d: 'Pairs of two bowlers from the same team.', a: 'Ranks each bowler on the events ticked under All Events counts.', m: 'Final round for the top qualifiers of All Events.' };
+      rBlocks = [{ title: 'Events', note: 'Turn on only the events this tournament plays. Every category plays them. Team events (Trios, Group of 4 and so on) are set up in the next section. All Events needs Singles and Doubles. Masters needs All Events. Switching one on turns on what it needs.', fields: ['s', 'd', 'a', 'm'].map((k) => field(EVN[k], evHelp[k], onOff(cfg.ev[k], (on) => toggleEv(k, on)), false)) },
+        { title: 'All Events counts', note: 'Tick the events whose games are added into each bowler\'s All Events total. A Baker event gives one score to the whole team, which cannot be split between bowlers, so it is left out even if ticked.', fields: ['s', 'd'].concat(tevKeys).map((k) => { const td = tevOf(k); return field(EVN[k], td && td.baker ? 'Baker: left out of All Events.' : (k === 's' || k === 'd' ? '' : 'Each bowler\'s own scores count.'), onOff(!!(cfg.allIn && cfg.allIn[k]), (on) => updIn('allIn', k, on)), true); }) }];
+    } else if (tab === 'points') {
+      const f = [field('Use points', 'Points feed the team standings. Off shows ranks and medals only.', onOff(cfg.pts, (on) => updCfg({ pts: on })), true),
+        field('Medal places', 'How many places receive a medal in every category and event.', optChips(cfg.medals, [[1, 'Top 1'], [2, 'Top 2'], [3, 'Top 3']], (v) => updCfg({ medals: v })), true)];
+      if (cfg.pts) {
+        f.push(stp('Places that score', 'Number of places that earn points.', cfg.scale.length, 1, 16, 1, numS, true, (nv) => updT((x) => { const sc = x.cfg.scale.slice(0, nv); while (sc.length < nv) sc.push('1'); return Object.assign({}, x, { cfg: Object.assign({}, x.cfg, { scale: sc }) }); })));
+        f.push(field('Quick scales', 'Fills the points below. You can still edit each place.', [
+          chip('10, 8, 6, 5, 4, 3, 2, 1', false, () => updCfg({ scale: ['10', '8', '6', '5', '4', '3', '2', '1'] })),
+          chip('8 down to 1', false, () => updCfg({ scale: ['8', '7', '6', '5', '4', '3', '2', '1'] })),
+          chip('3, 2, 1', false, () => updCfg({ scale: ['3', '2', '1'] }))
+        ], true));
+        f.push(Object.assign(field('Points per place', 'One scale for the whole tournament. A shared place scores that place\'s points, then the event multiplier is applied. Team champion: most points, then golds, silvers, bronzes.', [], true), { inputs: scaleIn }));
+      }
+      rBlocks = [{ title: 'Points and medals', note: '', fields: f }];
+      if (cfg.pts) rBlocks.push({ title: 'Event multipliers', note: 'Multiplies the points of every place in that event. Use ×0 to leave an event out of the standings.', fields: evAll.concat(['a', 'm']).map((k) => stp(EVN[k], '', cfg.mult[k] == null ? 1 : cfg.mult[k], 0, 5, 1, (v) => MUL + v, true, (nv) => updIn('mult', k, nv))) });
+      rBlocks.push({ title: 'Ranking', note: 'How teams and players are ordered in the results.', fields: [
+        field('Team ranking', 'Points first: most points wins and medals break ties. Medals first: gold, then silver, then bronze, and points break ties.', optChips(cfg.teamRule, [['points', 'Points first'], ['medals', 'Medals first']], (v) => updCfg({ teamRule: v })), true),
+        field('Player ranking', 'Medals only counts gold, silver and bronze. Medals, then pinfall uses total pinfall to separate players with the same medals.', optChips(cfg.indRule, [['medals', 'Medals only'], ['pinfall', 'Medals, then pinfall']], (v) => updCfg({ indRule: v })), true)
+      ] });
+      if (!cfg.pts) secNote = 'Points are off. Team standings are not scored. Medals still show for the top ' + cfg.medals + '.';
+    } else if (tab === 'rules' && canEdit) {
+      if (rsec === 'sc') {
+        const f1 = [field('Ranking basis', 'Scratch ranks on pinfall alone. Handicap adds pins for lower averages.', optChips(cfg.handicap, [[false, 'Scratch'], [true, 'Handicap']], (v) => updCfg({ handicap: v })), true)];
+        if (cfg.handicap) {
+          f1.push(field('Handicap percentage', 'Share of the difference from the base score that is added.', optChips(cfg.hcPct, [[70, '70%'], [80, '80%'], [90, '90%'], [100, '100%']], (v) => updCfg({ hcPct: v })), true));
+          f1.push(field('Handicap base score', 'Bowlers averaging above this get no handicap.', optChips(cfg.hcBase, [[190, '190'], [200, '200'], [210, '210'], [220, '220']], (v) => updCfg({ hcBase: v })), true));
+        }
+        rBlocks = [
+          { title: 'Ranking', note: 'Handicap off is the default. The handicap formula is not final, so handicap pins show as +0 for now.', fields: f1 },
+          { title: 'Ties', note: 'What happens when the tie-breaks cannot separate bowlers.', fields: [
+            field('Admin roll-off', 'Required means medals, points and Masters qualifiers wait for the Admin to record the roll-off. Not required means tied places share the rank and the points of that place.', optChips(cfg.needRoll, [[true, 'Required'], [false, 'Not required']], (v) => updCfg({ needRoll: v })), true)
+          ] }
+        ];
+      } else if (rsec === 'ln') {
+        rBlocks = [
+          { title: 'Bowlers per lane', note: 'The number of lanes comes from Details (' + lanesN + ' lanes). Lane draw and Masters use both numbers.', fields: [
+            field('Bowlers per lane', 'Bowlers who share one lane in a squad.', optChips(cfg.perLane, [[1, '1'], [2, '2'], [3, '3']], (v) => updCfg({ perLane: v })), false)
+          ] },
+          { title: 'Lane movement', note: 'How far a pair or team moves after the set number of games. Set 0 for no movement. Different tours use different rules.', fields: [
+            field('Pairs move', 'Lanes a pair moves each time.', optChips(cfg.movePair, [[0, '0'], [1, '1'], [2, '2'], [3, '3'], [4, '4']], (v) => updCfg({ movePair: v })), false),
+            field('Teams move', 'Lanes a team event team moves each time.', optChips(cfg.moveTeam, [[0, '0'], [1, '1'], [2, '2'], [3, '3'], [4, '4']], (v) => updCfg({ moveTeam: v })), false),
+            field('Move after every', 'Games bowled between moves.', optChips(cfg.moveEvery, [[1, '1 game'], [2, '2 games'], [3, '3 games']], (v) => updCfg({ moveEvery: v })), false),
+            field('Direction', 'Alternating sends odd-numbered starting lanes up and even-numbered ones down.', optChips(cfg.moveDir, [['right', 'Toward higher lanes'], ['alt', 'Alternating']], (v) => updCfg({ moveDir: v })), false)
+          ] }
+        ];
+        const G = cats.length ? Math.max(1, Math.max.apply(null, cats.map((x) => effG(x, 's')))) : 4;
+        const lanePos = (start, move, g) => { const blk = Math.floor((g - 1) / cfg.moveEvery); const sign = cfg.moveDir === 'alt' && start % 2 === 0 ? -1 : 1; return ((((start - 1) + sign * move * blk) % lanesN) + lanesN) % lanesN + 1; };
+        const mkRow = (label, start, move) => { const boxes = []; for (let g = 1; g <= G; g++) boxes.push({ n: 'G' + g, v: 'L' + lanePos(start, move, g) }); return { label, boxes }; };
+        laneRows = [mkRow('Pair starting on lane 1', 1, cfg.movePair), mkRow('Pair starting on lane 2', 2, cfg.movePair), mkRow('Team starting on lane 5', 5, cfg.moveTeam)];
+        laneNote = 'Example for a ' + G + '-game event on ' + lanesN + ' lanes. Lane numbers wrap around at the last lane.';
+      } else if (rsec === 'ms') {
+        const bTot = cats.reduce((a, x) => a + x.mq, 0);
+        rBlocks = [{ title: 'Masters', note: 'Qualifiers come from locked All Events scores and are confirmed by the Admin one category at a time. How many qualify from each category is set in Categories and events.', fields: [
+          field('Games in Masters', 'Same as the category means the category default number of games.', optChips(cfg.mGames, [[0, 'Same as category'], [3, '3'], [4, '4'], [6, '6'], [8, '8']], (v) => updCfg({ mGames: v })), false),
+          field('Carry-over from All Events', 'Pins added to every Masters total before the first game.', optChips(cfg.mCarry, [['none', 'None'], ['half', 'Half'], ['full', 'Full']], (v) => updCfg({ mCarry: v })), true)
+        ] }];
+        const cap = lanesN * cfg.perLane;
+        const squads = Math.max(1, Math.ceil(bTot / cap));
+        const lanesNeeded = Math.ceil(bTot / cfg.perLane);
+        fitCls = squads === 1 ? 'pm-st pm-st--open' : 'pm-st pm-st--warn';
+        fitChip = squads === 1 ? 'Fits in one squad' : 'Needs ' + squads + ' squads';
+        fitText = bTot + ' qualifiers at ' + plural(cfg.perLane, 'bowler') + ' per lane need ' + lanesNeeded + ' lanes. The venue has ' + lanesN + ' lanes, which seats ' + cap + ' bowlers, so Masters ' + (squads === 1 ? 'can run as one squad.' : 'must be split into ' + squads + ' squads.');
+        if (!cfg.ev.m) secNote = 'Masters is switched off in Categories and events. These settings are kept but not used.';
+      } else if (rsec === 'sl') {
+        const f = [field('Stepladder', 'A knockout final after Masters. Off by default.', onOff(cfg.sOn, (on) => updCfg({ sOn: on })), false)];
+        if (cfg.sOn) {
+          f.push(field('Finalists per category', 'The top seeds who take part.', optChips(cfg.sN, [[2, '2'], [3, '3'], [4, '4'], [5, '5']], (v) => updCfg({ sN: v })), false));
+          f.push(field('Games per match', 'With 2 games the higher combined pinfall wins. A tied match is settled by a roll-off.', optChips(cfg.sGames, [[1, '1 game'], [2, '2 games']], (v) => updCfg({ sGames: v })), false));
+          f.push(field('Seeded from', 'Which ranking decides the seeds.', optChips(cfg.sSeed, [['masters', 'Masters ranking'], ['all', 'All Events ranking']], (v) => updCfg({ sSeed: v })), false));
+        }
+        rBlocks = [{ title: 'Stepladder', note: 'The standard shape: the lowest two finalists bowl first, the loser is out, the winner moves up to face the next seed, and the top seed bowls only in the last match. The MTBC specifics are still to be confirmed, so every value here can be changed. The other screens do not use the stepladder yet.', fields: f }];
+        if (cfg.sOn) {
+          const N = cfg.sN;
+          for (let i = 1; i <= N - 1; i++) {
+            const left = i === 1 ? 'Seed ' + N : 'Winner of match ' + (i - 1);
+            ladderRows.push({ label: i === N - 1 ? 'Final' : 'Match ' + i, versus: left + ' vs Seed ' + (N - i), result: 'Loser finishes ' + ord(N - i + 1) + (i === N - 1 ? '. Winner takes 1st.' : '. Winner moves on.') });
+          }
+          ladderNote = 'Top ' + N + ' per category, ' + plural(cfg.sGames, 'game') + ' per match' + (cfg.sGames === 1 ? '' : ', higher total wins') + '. ' + plural(Math.max(1, cats.length), 'category') + ' means ' + plural(Math.max(1, cats.length), 'ladder') + '.';
+        } else secNote = 'Stepladder is off. Turn it on to set the finalists and see the steps.';
+      }
+    }
+
+    // ---- categories (step 2)
+    const akNow = allKeysOf(cfg);
+    const catNote = cfg.ev.a && cats.some((x) => akNow.some((k) => effG(x, k) !== effG(x, akNow[0]))) ? 'The events counted in All Events have different game counts in some category, so All Events there adds unequal games. Ranking stays on total pinfall.' : '';
+    const allGames = (x) => akNow.reduce((a, k) => a + effG(x, k), 0);
+    const catCards = cats.map((c) => ({
+      name: c.name,
+      summary: evKeys.length === 0 ? 'No events switched on yet' : plural(evKeys.length, 'event') + ' · ' + plural(c.games, 'default game'),
+      remove: () => { if (((t.usage || {}).categories || {})[c.id] > 0) { this.setState({ errText: c.name + ' already has athletes or entries, so it cannot be removed.', errReload: false }); return; } updT((x) => Object.assign({}, x, {
+        cfg: Object.assign({}, x.cfg, { cats: x.cfg.cats.filter((k) => k.id !== c.id), groups: Object.keys(x.cfg.groups || {}).reduce((o, key) => { o[key] = (x.cfg.groups[key] || []).map((g) => g.filter((i) => i !== c.id)).filter((g) => g.length); return o; }, {}) }),
+        blocks: x.blocks.filter((b) => b.catId !== c.id)
+      })); },
+      removeLabel: 'Remove ' + c.name,
+      gval: plural(c.games, 'game'),
+      gdec: () => { if (c.games > 1) updCat(c.id, (k) => Object.assign({}, k, { games: k.games - 1 })); },
+      ginc: () => { if (c.games < 12) updCat(c.id, (k) => Object.assign({}, k, { games: k.games + 1 })); },
+      gdecOff: ro || c.games <= 1, gincOff: ro || c.games >= 12,
+      gdecAria: 'Fewer default games for ' + c.name, gincAria: 'More default games for ' + c.name,
+      cells: evAll.map((k) => {
+        const v = effG(c, k), over = c.ev[k] != null;
+        const setV = (nv) => updCat(c.id, (q) => Object.assign({}, q, { ev: Object.assign({}, q.ev, { [k]: nv === q.games ? null : nv }) }));
+        return {
+          label: EVN[k], live: !!cfg.ev[k], off: !cfg.ev[k], val: plural(v, 'game'), over, own: !cfg.ev[k] ? 'Switch it on above to schedule it.' : over ? 'This event has its own number of games.' : 'Uses the default games.',
+          dec: () => { if (v > 1) setV(v - 1); }, inc: () => { if (v < 12) setV(v + 1); },
+          decOff: ro || v <= 1, incOff: ro || v >= 12,
+          reset: () => updCat(c.id, (q) => Object.assign({}, q, { ev: Object.assign({}, q.ev, { [k]: null }) })),
+          decAria: 'Fewer ' + EVN[k] + ' games for ' + c.name, incAria: 'More ' + EVN[k] + ' games for ' + c.name
+        };
+      }),
+      showQual: !!cfg.ev.m, qual: c.mq,
+      qDown: () => updCat(c.id, (k) => Object.assign({}, k, { mq: Math.max(1, k.mq - 1) })),
+      qUp: () => updCat(c.id, (k) => Object.assign({}, k, { mq: Math.min(24, k.mq + 1) })),
+      qDownOff: ro || c.mq <= 1, qUpOff: ro || c.mq >= 24,
+      qDownLabel: 'Fewer Masters qualifiers in ' + c.name, qUpLabel: 'More Masters qualifiers in ' + c.name,
+      allText: cfg.ev.a ? 'All Events per bowler: ' + allGames(c) + ' games (' + (akNow.map((k) => EVN[k] + ' ' + effG(c, k)).join(' + ') || 'no events ticked') + ')' : 'All Events is not played in this tournament.'
+    }));
+    const newName = (s.newCat || '').trim();
+    const dupe = newName !== '' && cats.some((c) => c.name.toLowerCase() === newName.toLowerCase());
+    const addCat = () => {
+      if (!newName || dupe) return;
+      const src = s.copyFrom ? cats.find((c) => c.id === s.copyFrom) : null;
+      updT((x) => {
+        const id = 'c' + x.nid;
+        const nc = { id, name: newName, games: src ? src.games : 6, ev: src ? Object.assign({}, src.ev) : { s: null, d: null }, mq: src ? src.mq : 8 };
+        return Object.assign({}, x, { nid: x.nid + 1, cfg: Object.assign({}, x.cfg, { cats: x.cfg.cats.concat([nc]) }) });
+      });
+      this.setState({ newCat: '', copyFrom: '' });
+    };
+    const copyOpts = [{ v: '', label: 'Start blank' }].concat(cats.map((c) => ({ v: c.id, label: c.name })));
+
+    // ---- team events (Trios, Group of 4 and any other team size)
+    const POOLK = ['t', 'g', 'x1', 'x2', 'x3', 'x4'];
+    const TPRE = [{ key: 't', name: 'Trios', size: 3, baker: false }, { key: 'g', name: 'Group of 4', size: 4, baker: true }, { key: '', name: 'Team of 5', size: 5, baker: false }, { key: '', name: 'Team of 6', size: 6, baker: false }, { key: '', name: 'Team event', size: 4, baker: false }];
+    const setTev = (k, patch) => updT((x) => Object.assign({}, x, { cfg: Object.assign({}, x.cfg, { tev: x.cfg.tev.map((q) => (q.k === k ? Object.assign({}, q, patch) : q)) }) }));
+    const freeKey = (pre) => { const used = tevKeys; if (pre.key && used.indexOf(pre.key) < 0) return pre.key; return ['x1', 'x2', 'x3', 'x4'].find((q) => used.indexOf(q) < 0) || ''; };
+    const addTev = (pre) => {
+      const k = freeKey(pre);
+      if (!k || ro) return;
+      updT((x) => {
+        const c0 = x.cfg, srcG = (c0.tev.map((q) => c0.groups && c0.groups[q.k]).find((g) => g && g.length) || (c0.groups && c0.groups.sd) || []).map((g) => g.slice());
+        const nm = pre.name === 'Team event' ? 'Team event ' + (c0.tev.length + 1) : pre.name;
+        return Object.assign({}, x, { cfg: Object.assign({}, c0, {
+          tev: c0.tev.concat([{ k, name: nm, size: pre.size, baker: pre.baker }]),
+          ev: Object.assign({}, c0.ev, { [k]: true }), mult: Object.assign({}, c0.mult, { [k]: 1 }), allIn: Object.assign({}, c0.allIn, { [k]: !pre.baker }),
+          groups: Object.assign({}, c0.groups, { [k]: srcG })
+        }) });
+      });
+      this.setState({ rMsg: pre.name + ' added. Set its name, team size and scoring below.' });
+    };
+    const removeTev = (k) => {
+      if (ro) return;
+      if (((t.usage || {}).events || {})[k] > 0) { this.setState({ errText: evName(k) + ' already has entries, so it cannot be removed.', errReload: false }); return; }
+      updT((x) => {
+        const c0 = x.cfg, ev = Object.assign({}, c0.ev), mult = Object.assign({}, c0.mult), allIn = Object.assign({}, c0.allIn), groups = Object.assign({}, c0.groups);
+        delete ev[k]; delete mult[k]; delete allIn[k]; delete groups[k];
+        return Object.assign({}, x, { cfg: Object.assign({}, c0, { tev: c0.tev.filter((q) => q.k !== k), ev, mult, allIn, groups, cats: c0.cats.map((c) => { const e2 = Object.assign({}, c.ev); delete e2[k]; return Object.assign({}, c, { ev: e2 }); }) }), blocks: x.blocks.filter((b) => b.evKey !== k) });
+      });
+    };
+    const tevRows = tevs.map((td) => {
+      const k = td.k, laneN = td.baker ? 1 : Math.ceil(td.size / cfg.perLane);
+      return {
+        key: k, nameId: 'tev-' + k, nameVal: td.name, onName: (e) => setTev(k, { name: String((e && e.target && e.target.value) || '').slice(0, 24) }),
+        sizeVal: td.size + ' bowlers', dec: () => { if (td.size > 3) setTev(k, { size: td.size - 1 }); }, inc: () => { if (td.size < 6) setTev(k, { size: td.size + 1 }); },
+        decOff: ro || td.size <= 3, incOff: ro || td.size >= 6, decAria: 'Fewer bowlers per ' + td.name + ' team', incAria: 'More bowlers per ' + td.name + ' team',
+        onChips: onOff(!!cfg.ev[k], (on) => toggleEv(k, on)),
+        fmtChips: optChips(td.baker ? 'baker' : 'ind', [['baker', 'Baker'], ['ind', 'Individual scores']], (v) => setTev(k, { baker: v === 'baker', }) ),
+        allChips: onOff(!!(cfg.allIn && cfg.allIn[k]), (on) => updIn('allIn', k, on)),
+        help: td.baker ? 'Baker: the ' + td.size + ' bowlers share one lane and one team score per game. It counts as a single game. Left out of All Events.' : 'Individual scores: every bowler scores, and the team total is the sum of the ' + td.size + '. A team uses ' + plural(laneN, 'lane') + ' at ' + plural(cfg.perLane, 'bowler') + ' per lane.',
+        removeLabel: 'Remove ' + td.name, remove: () => removeTev(k)
+      };
+    });
+    const tevAdd = TPRE.filter((p) => !(p.name !== 'Team event' && tevs.some((q) => q.name === p.name)) && freeKey(p)).map((p) => ({ label: '+ ' + p.name + (p.name === 'Team event' ? '' : ' (' + p.size + (p.baker ? ', Baker' : ', individual') + ')'), pick: () => addTev(p) }));
+
+    // ---- tie-break order list
+    const setTb = (fn) => updT((x) => Object.assign({}, x, { cfg: Object.assign({}, x.cfg, { tb: fn(x.cfg.tb.slice()) }) }));
+    const tbRows = cfg.tb.map((id, i) => ({
+      n: String(i + 1), label: TBN[id], upOff: i === 0, downOff: i === cfg.tb.length - 1,
+      up: () => setTb((a) => { if (i < 1) return a; const q = a[i]; a[i] = a[i - 1]; a[i - 1] = q; return a; }),
+      down: () => setTb((a) => { if (i >= a.length - 1) return a; const q = a[i]; a[i] = a[i + 1]; a[i + 1] = q; return a; }),
+      rm: () => setTb((a) => a.filter((q) => q !== id)),
+      upAria: 'Move ' + TBN[id] + ' up', downAria: 'Move ' + TBN[id] + ' down', rmAria: 'Remove ' + TBN[id]
+    }));
+    const tbAdd = ['best', 'last', 'last2', 'first'].filter((id) => cfg.tb.indexOf(id) < 0).map((id) => ({ label: 'Add ' + TBN[id], pick: () => setTb((a) => a.concat(id)) }));
+
+    // ---- presets
+    const PR = this.presets();
+    const core = (c) => JSON.stringify(Object.assign({}, c, { cats: 0, groups: 0, lanes: 0 }));
+    const curPre = PR.filter((p) => core(p.cfg) === core(cfg))[0];
+    const presetChips = PR.map((p) => ({
+      label: p.label, on: !!curPre && curPre.id === p.id, cls: 'pm-chip' + (curPre && curPre.id === p.id ? ' pm-chip--on' : ''),
+      pick: () => {
+        updT((x) => {
+          const nc = JSON.parse(JSON.stringify(p.cfg));
+          nc.cats = x.cfg.cats.map((c) => (p.games ? Object.assign({}, c, { games: p.games, ev: { s: null, d: null } }) : c));
+          nc.groups = x.cfg.groups; nc.lanes = x.cfg.lanes;
+          return Object.assign({}, x, { cfg: nc });
+        });
+        this.setState({ rMsg: p.label + ' loaded.' + (scoringStarted ? ' Review the changes, then save them.' : ' Check each section.') });
+      }
+    }));
+    const presetText = curPre ? curPre.text : 'Custom rules. These settings do not match any preset exactly.';
+
+    // ---- review and save (changes only wait here once the tournament is Live, Paused or Ended)
+    const doSave = () => {
+      if (saveOff) return;
+      const n = changes.length, why = needReason ? ' Reason: ' + s.reason.trim() + '.' : '';
+      this.reasonText = needReason ? s.reason.trim() : '';
+      this.setState((st) => ({ reason: '', rMsg: 'Saving the changes for this tournament…' + (needReason ? ' The reason is kept in the history.' : ''),
+        tours: st.tours.map((x, i) => (i === st.tid ? Object.assign({}, x, { savedCfg: x.cfg, savedBlocks: x.blocks, savedDetails: this.detailsOf(x) }) : x)) }), () => {
+        this.flush().then((ok) => { this.setState({ rMsg: ok ? 'Changes saved. ' + plural(n, 'setting') + ' changed.' + why : '' }); });
+      });
+    };
+    const doDiscard = () => {
+      updT((x) => Object.assign({}, x, x.savedDetails, { cfg: x.savedCfg, blocks: x.savedBlocks }));
+      this.setState({ reason: '', rMsg: 'Changes discarded. The saved rules are back.' });
+    };
+    const chgKeys = {}; changes.forEach((c) => { chgKeys[c.label] = true; });
+    const sumGroups = curG.map((g) => ({ title: g.title, rows: g.rows.map((r) => { const ch = canEdit && curF[r.k].val !== savF[r.k].val; return { label: r.label, val: r.val, changed: ch, cls: 'rl-sum' + (ch ? ' rl-chg' : '') }; }) }));
+    const ruleTabs = [['sc', 'Scoring and ties'], ['ln', 'Lanes and movement'], ['ms', 'Masters'], ['sl', 'Stepladder'], ['rv', changes.length ? 'Review and save (' + changes.length + ')' : 'Review and save']].map((x) => ({ label: x[1], on: rsec === x[0], cls: 'pm-chip' + (rsec === x[0] ? ' pm-chip--on' : ''), go: () => this.setState({ rsec: x[0], rMsg: '' }) }));
+
+    // ---- block groupings and the schedule builder (step 6)
+    const grp = cfg.groups || { sd: [] };
+    const groupNo = (key, id) => (grp[key] || []).findIndex((g) => g.indexOf(id) >= 0) + 1;
+    const setGroup = (key, id, n) => updT((x) => {
+      const cur = x.cfg.groups || { sd: [] };
+      const gs = (cur[key] || []).map((g) => g.filter((i) => i !== id));
+      if (n > 0) { while (gs.length < n) gs.push([]); gs[n - 1].push(id); }
+      return Object.assign({}, x, { cfg: Object.assign({}, x.cfg, { groups: Object.assign({}, cur, { [key]: gs.filter((g) => g.length) }) }) });
+    });
+    const gMax = (key) => Math.min(cats.length, (grp[key] || []).length + 1);
+    const gCtl = (key, c) => { const n = groupNo(key, c.id); return { label: n === 0 ? 'Own block' : 'Group ' + n, dec: () => setGroup(key, c.id, n - 1), inc: () => setGroup(key, c.id, n + 1), decOff: ro || n <= 0, incOff: ro || n >= gMax(key) }; };
+    const gKeys = [{ key: 'sd', head: 'SINGLES AND DOUBLES', name: 'Singles and Doubles', show: !!(cfg.ev.s || cfg.ev.d) }].concat(tevs.filter((x) => cfg.ev[x.k]).map((x) => ({ key: x.k, head: x.name.toUpperCase(), name: x.name, show: true }))).filter((g) => g.show);
+    const grpRows = cats.map((c) => ({
+      name: c.name,
+      cols: gKeys.map((g) => { const a = gCtl(g.key, c); return { head: g.head, label: a.label, dec: a.dec, inc: a.inc, decOff: a.decOff, incOff: a.incOff, decAria: 'Move ' + c.name + ' to a lower ' + g.name + ' group', incAria: 'Move ' + c.name + ' to a higher ' + g.name + ' group' }; })
+    }));
+    const grpSummary = (() => {
+      const nm = (id) => { const k = catOf(id); return k ? k.name : ''; };
+      const f = (list) => (list || []).map((g) => g.map(nm).filter(Boolean)).filter((g) => g.length > 1).map((g) => g.join(' + '));
+      const parts = gKeys.map((g) => ({ name: g.name, list: f(grp[g.key]) })).filter((x) => x.list.length).map((x) => x.name + ' ' + x.list.join('; '));
+      return !parts.length ? 'No categories are grouped, so each category bowls in its own block.' : 'Grouped: ' + parts.join('. ') + '. Everything else bowls in its own block.';
+    })();
+    const autoGroup = () => {
+      const ids = cats.map((c) => c.id), pr = [];
+      for (let i = 0; i < ids.length; i += 2) pr.push(ids.slice(i, i + 2));
+      const g2 = { sd: pr }; tevKeys.forEach((k) => { g2[k] = pr.map((p) => p.slice()); });
+      updCfg({ groups: g2 });
+      this.setState({ buildNote: '' });
+    };
+    // The same rules as the sample schedule in the other screens: groups share a block when the lanes allow, then Masters.
+    const BPT = 4;
+    const planBlocks = () => {
+      const ids = cats.map((c) => c.id), out = [];
+      let n = 0, day = 1, mins = 540, over = false;
+      const hhmm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+      const lanesPer = (ev) => { const td = tevOf(ev); return (td ? (td.baker ? 1 : Math.ceil(td.size / cfg.perLane)) : Math.ceil(BPT / cfg.perLane)) * teamsN; };
+      const mLanes = (id) => Math.max(1, Math.min(lanesN, Math.ceil(catOf(id).mq / cfg.perLane)));
+      const emit = (ev, part) => {
+        n++;
+        let G = 1, off = 0;
+        part.forEach((id) => {
+          const c = catOf(id), g = gamesFor(c, ev);
+          if (g > G) G = g;
+          const per = ev === 'm' ? mLanes(id) : lanesPer(ev);
+          const from = 1 + off;
+          off += per;
+          out.push({ day, name: 'Block ' + n, start: hhmm(Math.min(mins, 1380)), catId: id, evKey: ev, from, to: from + per - 1, games: g });
+        });
+        mins += G * 30 + 30;
+        if (mins >= 1020 && day < daysN) { day++; mins = 540; }
+        if (mins > 1380) over = true;
+      };
+      evAll.forEach((ev) => {
+        if (!cfg.ev[ev]) return;
+        const base = ((tevOf(ev) ? grp[ev] : grp.sd) || []).map((gr) => gr.filter((id) => ids.indexOf(id) >= 0)).filter((gr) => gr.length);
+        const used = {}; base.forEach((gr) => gr.forEach((id) => { used[id] = true; }));
+        ids.filter((id) => !used[id]).forEach((id) => base.push([id]));
+        base.forEach((gr) => { const parts = gr.length * lanesPer(ev) <= lanesN ? [gr] : gr.map((id) => [id]); parts.forEach((p) => emit(ev, p)); });
+      });
+      if (cfg.ev.m) { if (ids.reduce((a, id) => a + mLanes(id), 0) <= lanesN) emit('m', ids); else ids.forEach((id) => emit('m', [id])); }
+      return { list: out, over };
+    };
+    const doBuild = () => {
+      const plan = planBlocks();
+      updT((x) => Object.assign({}, x, { nid: x.nid + plan.list.length, blocks: plan.list.map((b, i) => Object.assign({ id: 'b' + (x.nid + i) }, b)) }));
+      this.setState({ buildAsk: false, sel: '', day: 1, buildNote: 'Built ' + plural(plan.list.length, 'block') + ' over ' + plural(Math.min(daysN, plan.list.reduce((m, b) => Math.max(m, b.day), 1)), 'day') + '. Check the start times and lanes below.' + (plan.over ? ' Some blocks do not fit in the tournament days. Add a day in Details or edit the times.' : '') });
+    };
+    const groupOff = ro || cats.length === 0 || evKeys.length === 0;
+    const buildBlocks = () => { if (groupOff) return; if (t.blocks.length) this.setState({ buildAsk: true, buildNote: '' }); else doBuild(); };
+
+    // ---------- teams and managers ----------
+    const limitN = t.limit || 6;
+    const EMR = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const updTeam = (id, fn) => updT((x) => Object.assign({}, x, { teams: x.teams.map((k) => k.id === id ? fn(k) : k) }));
+    const nc = (s.newCode || '').trim().toUpperCase(), nn = (s.newTeam || '').trim(), nme = (s.newMe || '').trim();
+    const teamErr = nc !== '' && !/^[A-Z0-9]{2,4}$/.test(nc) ? 'Use 2 to 4 letters or numbers for the team code.'
+      : nc !== '' && teams.some((k) => k.code === nc) ? 'This team code is already used.'
+      : nn !== '' && teams.some((k) => k.name.toLowerCase() === nn.toLowerCase()) ? 'A team with this name already exists.'
+      : nme !== '' && !EMR.test(nme) ? 'Enter a valid manager email, or leave it empty for now.' : '';
+    const addTeamOff = !nc || !nn || !!teamErr;
+    const addTeam = () => {
+      if (addTeamOff) return;
+      updT((x) => Object.assign({}, x, { nid: x.nid + 1, teams: x.teams.concat([{ id: 'tm' + x.nid, code: nc, name: nn, mn: (s.newMn || '').trim(), me: nme, off: false }]) }));
+      this.setState({ newCode: '', newTeam: '', newMn: '', newMe: '', teamNote: nn + ' added.' + (nme ? '' : ' Add the manager email so the Users page can send the PIN.') });
+    };
+    const teamRows = teams.map((k) => {
+      const used = ((t.usage || {}).teams || {})[k.id] || 0;
+      return {
+        code: k.code, name: k.name, mn: k.mn || '', me: k.me || '',
+        mnLabel: 'Manager name for ' + k.name, meLabel: 'Manager email for ' + k.name,
+        onMn: (e) => { const v = e.target.value; updTeam(k.id, (kk) => Object.assign({}, kk, { mn: v })); },
+        onMe: (e) => { const v = e.target.value; updTeam(k.id, (kk) => Object.assign({}, kk, { me: v })); },
+        hasMeErr: !!k.me && !EMR.test(k.me),
+        status: k.off ? 'Withdrawn' : 'Active', stCls: 'pm-st ' + (k.off ? 'pm-st--draft' : 'pm-st--open'),
+        offLabel: k.off ? 'Reinstate' : 'Withdraw', offAria: (k.off ? 'Reinstate ' : 'Withdraw ') + k.name, removeLabel: 'Remove ' + k.name,
+        toggleOff: () => { updTeam(k.id, (kk) => Object.assign({}, kk, { off: !kk.off })); this.setState({ teamNote: k.name + (k.off ? ' is active again.' : ' is withdrawn. It stays on record and its manager login can be switched off on the Users page.') }); },
+        remove: () => { updT((x) => Object.assign({}, x, { teams: x.teams.filter((kk) => kk.id !== k.id) })); this.setState({ teamNote: k.name + ' was removed.' }); },
+        removeOff: used > 0, hasUsed: used > 0
+      };
+    });
+
+    // ---------- steps ----------
+    const stampNow = () => { const d = new Date(); return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + d.getFullYear() + ' ' + d.toTimeString().slice(0, 5); };
+    const order = ['details', 'events', 'teams', 'rules', 'points', 'schedule'];
+    const labels = { details: 'Details', events: 'Categories and events', teams: 'Teams and managers', rules: 'Rules and format', points: 'Points and medals', schedule: 'Schedule and lanes' };
+    const steps = order.map((id, i) => ({
+      n: i + 1, label: labels[id],
+      cls: 'pm-tab' + (s.tab === id ? ' pm-tab--on' : ''),
+      cur: s.tab === id ? 'step' : 'false',
+      go: () => this.setState({ tab: id })
+    }));
+    const idx = order.indexOf(s.tab);
+    const isFirst = idx === 0, isLast = idx === order.length - 1;
+    const nextLabel = isLast ? (t.status === 'Draft' ? 'Publish tournament' : 'Already published') : 'Next: ' + labels[order[idx + 1]];
+    const nextOff = isLast ? (ro || s.pubMsg || dateErr || !ready || !t.id || t.status !== 'Draft') : false;
+    const goBack = () => this.setState({ tab: order[Math.max(0, idx - 1)] });
+    const goNext = () => {
+      if (isLast) {
+        this.setStatus('Registration open', '').then((err) => { if (err) this.setState({ errText: err, errReload: false }); else this.setState({ pubMsg: true }); });
+      } else {
+        this.setState({ tab: order[idx + 1] });
+      }
+    };
+    const readyMsg = cats.length === 0 ? 'Add at least one category in step 2 before publishing.' : evKeys.length === 0 ? 'Switch on at least one event in step 2 before publishing.' : 'Add at least one team in step 3 before publishing.';
+
+    // ---------- schedule ----------
+    const overlap = (x, y) => x.from <= y.to && y.from <= x.to;
+    const issueFor = (b, list) => {
+      const cat = cats.find((c) => c.id === b.catId);
+      if (!cat) return 'Pick a category.';
+      if (!cfg.ev[b.evKey]) return evName(b.evKey) + ' is switched off for this tournament.';
+      if (b.from < 1 || b.to < b.from) return 'Check the lane numbers: the last lane must come after the first.';
+      if (b.to > lanesN) return 'Uses lanes above ' + lanesN + ', which this venue does not have.';
+      const clash = list.find((o) => o.id !== b.id && o.start === b.start && overlap(b, o));
+      if (clash) return 'Shares lanes with ' + clash.name + ' at ' + b.start + '.';
+      return '';
+    };
+    const dayBlocks = blocks.filter((b) => b.day === curDay);
+    const selected = dayBlocks.find((b) => b.id === s.sel) || dayBlocks[0];
+    const rows = dayBlocks.map((b) => {
+      const cat = cats.find((c) => c.id === b.catId);
+      const issue = issueFor(b, dayBlocks);
+      const on = !!selected && selected.id === b.id;
+      return {
+        name: b.name, start: b.start, catName: cat ? cat.name : 'No category', evName: evName(b.evKey), games: b.games,
+        lanesLabel: b.from + ' to ' + b.to,
+        capacity: Math.max(0, b.to - b.from + 1) * cfg.perLane,
+        issue, hasIssue: !!issue, on,
+        cls: 'pm-row' + (on ? ' pm-row--on' : ''),
+        pick: () => this.setState({ sel: b.id })
+      };
+    });
+    let conflictCount = 0;
+    for (let d = 1; d <= daysN; d++) {
+      const L = blocks.filter((b) => b.day === d);
+      L.forEach((b) => { if (issueFor(b, L)) conflictCount++; });
+    }
+    const selCat = selected ? cats.find((c) => c.id === selected.catId) : null;
+    const catOpts = cats.map((c) => ({ v: c.id, label: c.name }));
+    let evOpts = EV.filter((e) => cfg.ev[e.key]).map((e) => ({ v: e.key, label: e.name }));
+    if (selected && !cfg.ev[selected.evKey]) evOpts = [{ v: selected.evKey, label: evName(selected.evKey) + ' (switched off)' }].concat(evOpts);
+    const sb = selected ? {
+      name: selected.name, start: selected.start, catId: selected.catId, evKey: selected.evKey,
+      from: selected.from, to: selected.to, games: selected.games,
+      onName: (e) => patchB(selected.id, { name: e.target.value }),
+      onStart: (e) => patchB(selected.id, { start: e.target.value }),
+      onCat: (e) => {
+        const cid = e.target.value;
+        const c = cats.find((k) => k.id === cid);
+        const keys = evKeys;
+        const key = keys.indexOf(selected.evKey) >= 0 ? selected.evKey : (keys[0] || selected.evKey);
+        patchB(selected.id, { catId: cid, evKey: key, games: gamesFor(c, key) });
+      },
+      onEvent: (e) => { const key = e.target.value; patchB(selected.id, { evKey: key, games: gamesFor(selCat, key) }); },
+      onFrom: (e) => patchB(selected.id, { from: num(e) }),
+      onTo: (e) => patchB(selected.id, { to: num(e) }),
+      onGames: (e) => patchB(selected.id, { games: num(e) })
+    } : { name: '', start: '', catId: '', evKey: '', from: '', to: '', games: '', onName: () => {}, onStart: () => {}, onCat: () => {}, onEvent: () => {}, onFrom: () => {}, onTo: () => {}, onGames: () => {} };
+    const defGames = selected ? gamesFor(selCat, selected.evKey) : 0;
+    const gamesHint = selected ? ('Category setting: ' + defGames + ' games' + (selected.games !== defGames ? '. This block is changed from that.' : '.')) : '';
+    const firstCat = evKeys.length ? cats[0] : null;
+    const addOff = ro || !firstCat;
+    const addBlock = () => {
+      if (!firstCat) return;
+      const key = evKeys[0];
+      const id = 'b' + t.nid;
+      updT((x) => Object.assign({}, x, {
+        nid: x.nid + 1,
+        blocks: x.blocks.concat([{ id, day: curDay, name: 'Block ' + String.fromCharCode(65 + (x.blocks.length % 26)), start: '09:00', catId: firstCat.id, evKey: key, from: 1, to: lanesN, games: gamesFor(firstCat, key) }])
+      }));
+      this.setState({ sel: id });
+    };
+    const removeBlock = () => {
+      if (!selected) return;
+      updT((x) => Object.assign({}, x, { blocks: x.blocks.filter((b) => b.id !== selected.id) }));
+      this.setState({ sel: '' });
+    };
+    const days = [];
+    for (let i = 1; i <= daysN; i++) {
+      days.push({
+        label: 'Day ' + i, date: isNaN(a) ? 'Date not set' : fmt(a + (i - 1) * 864e5),
+        on: i === curDay,
+        cls: 'pm-chip' + (i === curDay ? ' pm-chip--on' : ''),
+        pick: () => this.setState({ day: i, sel: '' })
+      });
+    }
+    const laneCells = [];
+    for (let n = 1; n <= lanesN; n++) {
+      let cls = 'pm-lane';
+      const inSel = selected && n >= selected.from && n <= selected.to;
+      const inOth = dayBlocks.some((b) => (!selected || b.id !== selected.id) && n >= b.from && n <= b.to);
+      if (inSel) cls += ' pm-lane--sel'; else if (inOth) cls += ' pm-lane--oth';
+      laneCells.push({ n, cls });
+    }
+    if (selected && selected.to > lanesN) {
+      for (let n = lanesN + 1; n <= Math.min(selected.to, lanesN + 8); n++) laneCells.push({ n, cls: 'pm-lane pm-lane--bad' });
+    }
+
+    // ---------- tournament status ----------
+    const STX = {
+      'Draft': 'Only the Admin can see this tournament. Managers cannot sign in to it yet.',
+      'Registration open': 'Managers can sign in and register their own teams.',
+      'Registration closed': 'Managers can no longer edit. Only the Admin can change entries, and each change is logged.',
+      'Live': 'Scoring is on. Registration and the lane draw are locked.',
+      'Paused': 'Marshals cannot enter or submit scores. The public page shows Paused.',
+      'Ended': 'Scores are final. Only the Admin can reopen the tournament.'
+    };
+    const MOVES = {
+      'Draft': [['Registration open', 'Open registration', true]],
+      'Registration open': [['Registration closed', 'Close registration', false], ['Live', 'Go live', true]],
+      'Registration closed': [['Registration open', 'Reopen registration', false], ['Live', 'Go live', true]],
+      'Live': [['Paused', 'Pause', false], ['Ended', 'End tournament', false]],
+      'Paused': [['Live', 'Resume', true], ['Ended', 'End tournament', false]],
+      'Ended': [['Live', 'Reopen tournament', false]]
+    };
+    const needsReason = (to) => to === 'Paused' || (t.status === 'Ended' && to === 'Live');
+    const issueFor2 = (to) => !t.id ? 'Create the tournament on Details first.' : ((to === 'Registration open' || to === 'Live') && !ready) ? readyMsg.replace('before publishing.', 'first.')
+      : (to === 'Live' && blocks.length === 0) ? 'Add at least one block in Schedule and lanes before going live.'
+      : (to === 'Live' && conflictCount > 0) ? 'Fix the schedule problems before going live.' : '';
+    const pendTo = s.pendingTo && s.pendingTo !== t.status ? s.pendingTo : '';
+    const stMoves = canCreate ? (MOVES[t.status] || []).map((m) => ({ label: m[1], cls: 'pm-btn' + (m[2] ? ' pm-btn--pri' : '') + (pendTo === m[0] ? ' pm-btn--sel' : ''), go: () => this.setState({ pendingTo: m[0], stReason: '', stNote: '' }) })) : [];
+    const reasonList = t.status === 'Ended' ? ['Scoring correction', 'Protest', 'Other'] : ['Lane problem', 'Power or system fault', 'Weather or safety', 'Break', 'Other'];
+    const stReasons = reasonList.map((r) => ({ label: r, on: s.stReason === r, cls: 'pm-chip' + (s.stReason === r ? ' pm-chip--on' : ''), pick: () => this.setState({ stReason: r }) }));
+    const pendIssue = pendTo ? issueFor2(pendTo) : '';
+    const pendNeed = pendTo ? needsReason(pendTo) : false;
+    const confirmStatus = () => {
+      if (!pendTo || pendIssue || (pendNeed && !s.stReason)) return;
+      const to = pendTo, rsn = pendNeed ? s.stReason : '';
+      this.setStatus(to, rsn).then((err) => {
+        if (err) { if (err !== 'x') this.setState({ stNote: '', errText: err, errReload: false }); return; }
+        this.setState({ pendingTo: '', stReason: '', pubMsg: false, stNote: 'Status is now ' + to + '. ' + STX[to] });
+      });
+    };
+    const statusLog = (t.statusLog || []).slice(0, 4);
+
+    return {
+      accent, t, ro, canEdit, title, titleShort: title,
+      role, roleNote, canCreate, roleCards, matrix, signIn, signOut,
+      signedAs: 'Signed in as Admin', gate: s.gate, gateRetry: s.gateRetry, loggedIn: !s.gate,
+      initials: s.user ? String(s.user.display_name || s.user.login_id || 'AD').replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() : 'AD',
+      stCls: stClass(t.status),
+      switcherOpen: s.switcherOpen,
+      toggleSwitcher: () => this.setState((st) => ({ switcherOpen: !st.switcherOpen })),
+      tourList,
+      newTour: () => this.newTour(),
+      pubMsg: s.pubMsg,
+      saveNow: () => this.flush(),
+      reload: () => this.reload(),
+      clearErr: () => this.setState({ errText: '' }),
+      hasErr: !!s.errText, errText: s.errText, errReload: s.errReload, noReload: !s.errReload,
+      notCreated: !t.id,
+      createTour: () => this.createTour(),
+      createOff: !t.id && !!this.detailsIssue(this.detailsOf(t)),
+      detailsErr: this.detailsIssue(this.detailsOf(t)), hasDetailsErr: !!this.detailsIssue(this.detailsOf(t)) && !!(t.id || t.name || t.code),
+      syncText: !t.id ? 'Not saved yet' : s.sync === 'saving' || s.sync === 'pending' ? 'Saving…' : s.sync === 'invalid' ? s.syncMsg : s.sync === 'error' ? 'Not saved. ' + s.syncMsg : 'All changes saved',
+      syncColor: !t.id || s.sync === 'invalid' ? '#6B4400' : s.sync === 'error' ? '#B42318' : s.sync === 'saving' || s.sync === 'pending' ? '#44546A' : '#0B5A38',
+      syncRetry: s.sync === 'error',
+      steps, isDetails: s.tab === 'details', isEvents: s.tab === 'events', isRules: s.tab === 'rules', isSchedule: s.tab === 'schedule',
+      blocks: rBlocks, secNote, presetChips, presetText, showPresets: tab === 'rules' && canEdit && rsec === 'sc',
+      showRuleTabs: tab === 'rules' && canEdit, ruleTabs,
+      rMsg: s.rMsg, clearRMsg: () => this.setState({ rMsg: '' }),
+      hasUnsaved: canEdit && changes.length > 0 && !(tab === 'rules' && rsec === 'rv'),
+      unsavedText: plural(changes.length, 'rule change') + ' not saved yet. The tournament is ' + statusWord + ', so changes wait for you to review and save them' + (needReason ? ', with a reason.' : '.'),
+      goReview: () => this.setState({ tab: 'rules', rsec: 'rv' }),
+      rulesState: changes.length ? plural(changes.length, 'unsaved change') : 'Saved',
+      showTb: tab === 'rules' && canEdit && rsec === 'sc', tbRows, tbLast: String(cfg.tb.length + 1), tbAdd, hasTbAdd: tbAdd.length > 0,
+      showLanes: tab === 'rules' && canEdit && rsec === 'ln', laneRows, laneNote,
+      showFit: tab === 'rules' && canEdit && rsec === 'ms', fitText, fitChip, fitCls,
+      showLadder: tab === 'rules' && canEdit && rsec === 'sl' && cfg.sOn, ladderRows, ladderNote,
+      showSave: tab === 'rules' && canEdit && rsec === 'rv', changes, noChanges: changes.length === 0, needReason, statusWord, reason: s.reason, setReason: (e) => this.setState({ reason: String((e && e.target && e.target.value) || '') }), saveOff, discardOff: ro || changes.length === 0, doSave, doDiscard,
+      showSummary: tab === 'rules' && (!canEdit || rsec === 'rv'), sumGroups,
+      summaryTitle: canEdit ? 'Rules at a glance' : 'Tournament rules',
+      summaryNote: canEdit ? 'Everything the tournament will use. Rows marked Changed are not saved yet.' : 'The rules this tournament runs on, as saved by the Admin.',
+      catNote, noCatsHere: cats.length === 0, grpRows, grpSummary, autoGroup, buildBlocks, confirmBuild: doBuild, cancelBuild: () => this.setState({ buildAsk: false }), buildAsk: s.buildAsk, buildNote: s.buildNote, groupOff,
+      isFirst, nextLabel, nextOff, goBack, goNext,
+      showReadyMsg: isLast && !ready && canEdit, readyMsg,
+      on: { name: setName('name'), edition: setName('edition'), code: setCode, notes: setT('notes'), venue: setT('venue'), city: setT('city'), lanes: setT('lanes'), start: setT('start'), end: setT('end'), regOpen: setT('regOpen'), regClose: setT('regClose') },
+      dateErr, daysN, lanesN,
+      statusText: STX[t.status] || '', stMoves, hasMoves: stMoves.length > 0, hasPend: !!pendTo,
+      pendTitle: pendTo ? 'Change status from ' + t.status + ' to ' + pendTo + '?' : '', pendText: pendTo ? STX[pendTo] : '',
+      pendNeed, stReasons, pendIssue, hasPendIssue: !!pendIssue,
+      confirmOff: !pendTo || !!pendIssue || (pendNeed && !s.stReason), confirmStatus, cancelStatus: () => this.setState({ pendingTo: '', stReason: '' }),
+      stNote: s.stNote, hasStNote: !!s.stNote, statusLog, hasStLog: statusLog.length > 0,
+      newMn: s.newMn, onNewMn: (e) => this.setState({ newMn: String((e && e.target && e.target.value) || '') }),
+      newMe: s.newMe, onNewMe: (e) => this.setState({ newMe: String((e && e.target && e.target.value) || '') }),
+      isTeams: s.tab === 'teams', teamRows, hasTeams: teamRows.length > 0, noTeams: teamRows.length === 0, teamsN: teams.length,
+      newCode: s.newCode, onNewCode: (e) => this.setState({ newCode: String((e && e.target && e.target.value) || '') }),
+      newTeam: s.newTeam, onNewTeam: (e) => this.setState({ newTeam: String((e && e.target && e.target.value) || '') }),
+      addTeam, addTeamOff, teamErr, hasTeamErr: !!teamErr, teamNote: s.teamNote, hasTeamNote: !!s.teamNote, clearTeamNote: () => this.setState({ teamNote: '' }),
+      limit: limitN, limitDown: () => updT((x) => Object.assign({}, x, { limit: Math.max(1, (x.limit || 6) - 1) })), limitUp: () => updT((x) => Object.assign({}, x, { limit: Math.min(20, (x.limit || 6) + 1) })),
+      limitDownOff: ro || limitN <= 1, limitUpOff: ro || limitN >= 20,
+      catsOn: cats.length, evOn: pairs, blocksTotal: blocks.length,
+      hasConflicts: conflictCount > 0, conflictCount,
+      newCat: s.newCat, onNewCat: (e) => this.setState({ newCat: e.target.value }),
+      copyFrom: s.copyFrom, onCopy: (e) => this.setState({ copyFrom: e.target.value }),
+      copyOpts, addCat, addCatOff: !newName || dupe, hasCatMsg: dupe, catMsg: 'A category with this name already exists.',
+      noCats: cats.length === 0, catCards, tevRows, noTev: tevRows.length === 0, tevAdd, hasTevAdd: tevAdd.length > 0,
+      days, curDayLabel, rows, noBlocks: dayBlocks.length === 0,
+      emptyMsg: firstCat ? 'No blocks on this day yet. Add a block to assign a category, event and lanes.' : 'Add a category and switch on an event first (step 2). Then you can schedule blocks.',
+      hasSel: !!selected, noSel: !selected, sb, evOpts, catOpts, gamesHint,
+      addBlock, addOff, removeBlock, laneCells
+    };
+  }
+}
+</script>
+</body>
+</html>
