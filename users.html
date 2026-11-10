@@ -14,7 +14,9 @@
   <span class="pm-brand" style="font-size:22px">PIN MASTER</span>
   <span class="pm-h" style="font-size:22px;color:#C9D4E5">Users</span>
   <span class="sp"></span>
-  <a class="pm-btn" href="setup.html" style="text-decoration:none">Setup</a>
+  <a class="pm-btn" href="hub.html" id="l-hub" style="text-decoration:none">Hub</a>
+  <a class="pm-btn" href="setup.html" id="l-dash" style="text-decoration:none">Dashboard</a>
+  <a class="pm-btn" href="setup.html" id="l-setup" style="text-decoration:none">Setup</a>
   <span id="who" style="font-size:14px;color:#C9D4E5"></span>
   <button class="pm-btn" id="out" type="button">Sign out</button>
 </header>
@@ -80,24 +82,25 @@
   var ROLE = { admin: 'Admin', team_manager: 'Team manager', marshal: 'Marshal' };
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var sess = PM.getSession();
-  if (!sess || !sess.user || sess.user.role !== 'admin') { location.replace('login.html'); return; }
+  if (!sess || !sess.user || sess.user.role !== 'admin') { PM.goLogin(); return; }
 
-  var S = { tid: PM.pref('tid') || '', tournaments: [], teams: [], logins: [], role: 'team_manager', filter: 'all', busy: false };
+  var S = { tid: PM.q('t') || PM.pref('tid') || '', tournaments: [], teams: [], logins: [], role: 'team_manager', filter: 'all', busy: false };
 
   function note(kind, text) { return h('p', { class: 'pm-msg pm-msg--' + kind, role: kind === 'err' ? 'alert' : 'status', text: text }); }
   function banner(kind, text) { $('banner').replaceChildren(kind ? note(kind, text) : ''); }
   function fatal(e) {
-    if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { location.replace('login.html?expired=1'); return; }
+    if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return; }
     banner('err', (e && e.message) || 'Something went wrong. Try again.');
   }
   function team(id) { return S.teams.filter(function (t) { return t.team_id === id; })[0]; }
 
+  function links() { $('l-dash').href = PM.link('tournament.html', S.tid); $('l-setup').href = PM.link('setup.html', S.tid); $('l-dash').hidden = !S.tid; }
   // ---------- load ----------
   function load() {
     return Promise.all([api('db.list', { table: 'Tournaments' }), api('logins.list', {})]).then(function (r) {
       S.tournaments = r[0].rows; S.logins = r[1].rows;
       if (!S.tournaments.some(function (t) { return t.tournament_id === S.tid; })) S.tid = S.tournaments.length ? S.tournaments[0].tournament_id : '';
-      PM.pref('tid', S.tid);
+      PM.pref('tid', S.tid); PM.setT(S.tid); links();
       return S.tid ? api('db.list', { table: 'Teams', where: { tournament_id: S.tid } }) : { rows: [] };
     }).then(function (t) { S.teams = t.rows.sort(function (a, b) { return String(a.code).localeCompare(String(b.code)); }); render(); })
       .catch(fatal);
@@ -270,7 +273,7 @@
   });
 
   // ---------- wiring ----------
-  $('tsel').addEventListener('change', function () { S.tid = this.value; PM.pref('tid', S.tid); $('bulkres').replaceChildren(); load(); });
+  $('tsel').addEventListener('change', function () { S.tid = this.value; PM.pref('tid', S.tid); PM.setT(S.tid); links(); $('bulkres').replaceChildren(); load(); });
   $('a-team').addEventListener('change', function () { $('a-name').value = ''; $('a-mail').value = ''; prefillFromTeam(); });
   Array.prototype.forEach.call(document.querySelectorAll('.pm-seg'), function (b) {
     b.addEventListener('click', function () { S.role = b.dataset.role; $('a-name').value = ''; $('a-mail').value = ''; $('result').replaceChildren(); renderForm(); });

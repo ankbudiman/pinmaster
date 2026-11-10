@@ -86,5 +86,40 @@
     });
   }
 
-  window.PM = { api: api, h: h, getSession: getSession, setSession: setSession, pref: pref, fmtTime: fmtTime, confirmDialog: confirmDialog };
+  // ---------- navigation: which page to open, and where the tournament id lives (the web address: ?t=) ----------
+  var PAGES = ['hub.html', 'tournament.html', 'setup.html', 'users.html'];
+  var STATUS = { draft: 'Draft', regopen: 'Registration open', regclosed: 'Registration closed', live: 'Live', paused: 'Paused', ended: 'Ended' };
+  function q(name) { try { return new URLSearchParams(location.search).get(name) || ''; } catch (e) { return ''; } }
+  function here() { return (location.pathname.split('/').pop() || '') + location.search; }
+  function goLogin(expired) { location.replace('login.html?next=' + encodeURIComponent(here()) + (expired ? '&expired=1' : '')); }
+  function safeNext(n) {
+    n = String(n || '');
+    return PAGES.indexOf(n.split('?')[0]) >= 0 && /^[a-z]+\.html(\?[A-Za-z0-9_=&.\-]*)?$/.test(n) ? n : '';
+  }
+  function home(user) { return user.role === 'admin' ? 'hub.html' : 'tournament.html?t=' + encodeURIComponent(user.tournament_id || ''); }
+  // Where to go after signing in: the page the person asked for, else their home page. Non-admins only ever get their tournament page.
+  function landing(user) {
+    var n = safeNext(q('next'));
+    if (n && (user.role === 'admin' || n.indexOf('tournament.html') === 0)) return n;
+    return home(user);
+  }
+  function link(page, id, extra) { return page + (id ? '?t=' + encodeURIComponent(id) + (extra ? '&' + extra : '') : (extra ? '?' + extra : '')); }
+  function setT(id) { try { if (window.history && history.replaceState) { var u = new URL(location.href); if (id) u.searchParams.set('t', id); else u.searchParams.delete('t'); u.searchParams.delete('new'); history.replaceState(null, '', u.pathname.split('/').pop() + u.search); } } catch (e) {} }
+  function fmtDates(s, e) {
+    function f(x, withYear, withMonth) { var d = new Date(x + 'T00:00:00'); if (isNaN(d)) return ''; return d.toLocaleDateString('en-GB', { day: 'numeric', month: withMonth === false ? undefined : 'short', year: withYear ? 'numeric' : undefined }); }
+    if (!s) return 'Dates not set';
+    if (!e || e === s) return f(s, true);
+    return f(s, false) + ' to ' + f(e, true);
+  }
+  // The one button on a tournament card.
+  function cardAction(r) {
+    var id = r.tournament_id;
+    if (r.status === 'draft') return r.setup_complete ? { label: 'Continue Setup', href: link('setup.html', id) } : { label: 'Complete Setup', href: link('setup.html', id), incomplete: true };
+    if (r.status === 'live' || r.status === 'paused') return { label: 'Manage Tournament', href: link('tournament.html', id) };
+    if (r.status === 'ended') return { label: 'View Results', href: link('tournament.html', id) };
+    return { label: 'Open Tournament', href: link('tournament.html', id) };
+  }
+
+  window.PM = { api: api, h: h, getSession: getSession, setSession: setSession, pref: pref, fmtTime: fmtTime, confirmDialog: confirmDialog,
+    q: q, goLogin: goLogin, landing: landing, home: home, link: link, setT: setT, fmtDates: fmtDates, cardAction: cardAction, STATUS: STATUS };
 })();

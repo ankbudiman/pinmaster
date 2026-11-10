@@ -105,7 +105,7 @@ h1,h2,h3,p{margin:0}
         <sc-if value="{{gateRetry}}" hint-placeholder-val="{{ false }}">
           <div style="display: flex; flex-wrap: wrap; gap: 8px">
             <button class="pm-btn pm-btn--pri" onClick="{{reload}}">Try again</button>
-            <a class="pm-btn" href="users.html" style="text-decoration: none">Back to Users</a>
+            <a class="pm-btn" href="hub.html" style="text-decoration: none">Back to the hub</a>
           </div>
         </sc-if>
       </div>
@@ -158,7 +158,11 @@ h1,h2,h3,p{margin:0}
           </sc-if>
         </div>
 
-        <a class="pm-hd-btn" href="users.html" style="min-height: 44px; text-decoration: none; color: #fff">Users</a>
+        <a class="pm-hd-btn" href="hub.html" style="min-height: 44px; text-decoration: none; color: #fff">Hub</a>
+        <sc-if value="{{dashHref}}" hint-placeholder-val="{{ '' }}">
+          <a class="pm-hd-btn" href="{{dashHref}}" style="min-height: 44px; text-decoration: none; color: #fff">Dashboard</a>
+        </sc-if>
+        <a class="pm-hd-btn" href="{{usersHref}}" style="min-height: 44px; text-decoration: none; color: #fff">Users</a>
         <span style="width: 40px; height: 40px; border-radius: 20px; background: #E7ECF3; color: #0E1A2B; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center" aria-label="Your account initials">{{initials}}</span>
         <button class="pm-hd-btn" style="min-height: 44px" onClick="{{signOut}}">Sign out</button>
       </div>
@@ -998,7 +1002,7 @@ class Component extends DCLogic {
   // ---------- server connection ----------
   componentDidMount() {
     const sess = window.PM && PM.getSession();
-    if (!sess || !sess.user || sess.user.role !== 'admin') { location.replace('login.html'); return; }
+    if (!sess || !sess.user || sess.user.role !== 'admin') { PM.goLogin(); return; }
     this.setState({ user: sess.user });
     this._bu = (e) => { if (this.hasPending()) { e.preventDefault(); e.returnValue = ''; } };
     window.addEventListener('beforeunload', this._bu);
@@ -1013,7 +1017,7 @@ class Component extends DCLogic {
   }
   signOut() { PM.api('auth.logout').catch(() => {}).finally(() => { PM.setSession(null); location.replace('login.html'); }); }
   authFail(e) {
-    if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { location.replace('login.html?expired=1'); return true; }
+    if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return true; }
     return false;
   }
   blankTour() {
@@ -1037,12 +1041,18 @@ class Component extends DCLogic {
     try {
       const r = await PM.api('db.list', { table: 'Tournaments' });
       const rows = r.rows.slice().sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-      const want = wantId || PM.pref('tid');
-      const pick = rows.find((x) => x.tournament_id === want) || rows[0];
+      const fresh = !wantId && PM.q('new') === '1';
+      const want = wantId || PM.q('t') || PM.pref('tid');
+      const asked = PM.q('t');
+      if (asked && !wantId && !rows.some((x) => x.tournament_id === asked)) { this.setState({ gate: 'That tournament was not found.', gateRetry: true }); return; }
+      const pick = fresh ? null : (rows.find((x) => x.tournament_id === want) || rows[0]);
       let tours = rows.map((x) => this.stubTour(x));
-      if (!tours.length) tours = [this.blankTour()];
-      const tid = pick ? Math.max(0, tours.findIndex((x) => x.id === pick.tournament_id)) : 0;
-      this.setState({ tours, tid, sync: 'idle', errText: '', errReload: false });
+      if (!tours.length || fresh) tours = tours.concat([this.blankTour()]);
+      const tid = pick ? Math.max(0, tours.findIndex((x) => x.id === pick.tournament_id)) : tours.length - 1;
+      const tabWant = wantId ? '' : PM.q('tab');
+      const tabOk = ['details', 'events', 'teams', 'rules', 'points', 'schedule'].indexOf(tabWant) >= 0 && pick ? { tab: tabWant } : {};
+      this.setState(Object.assign({ tours, tid, sync: 'idle', errText: '', errReload: false }, tabOk));
+      if (!pick) PM.setT(null);
       if (pick) await this.loadTour(pick.tournament_id);
       this.setState({ gate: '' });
     } catch (e) {
@@ -1054,7 +1064,7 @@ class Component extends DCLogic {
     const d = await PM.api('setup.load', { tournament_id: id });
     const t = this.buildTour(d);
     this.setState((st) => ({ tours: st.tours.map((x) => (x.id === id ? t : x)), sel: '', day: 1, sync: 'idle', syncMsg: '', errText: '', errReload: false }));
-    PM.pref('tid', id);
+    PM.pref('tid', id); PM.setT(id);
   }
   buildTour(d) {
     const tr = d.tournament, cin = tr.cfg_json || {}, meta = cin.meta || {};
@@ -1195,7 +1205,7 @@ class Component extends DCLogic {
       const r = await PM.api('db.create', { table: 'Tournaments', row: { name: x.name, code: x.code.toUpperCase(), start_date: x.start_date, end_date: x.end_date, venue: x.venue, lanes: x.lanes, per_lane: x.per_lane, cfg_json: x.cfg } });
       const row = r.row;
       this.setState((st) => ({ tours: st.tours.map((q, i) => (i === idx ? Object.assign({}, q, { id: row.tournament_id, base: row.updated_at, srv: {}, codeAuto: false }) : q)), sync: 'pending' }));
-      PM.pref('tid', row.tournament_id);
+      PM.pref('tid', row.tournament_id); PM.setT(row.tournament_id);
       this.queueSave(50);
     } catch (e) {
       if (this.authFail(e)) return;
@@ -1230,9 +1240,10 @@ class Component extends DCLogic {
       this.setState({ gate: 'Loading…', gateRetry: false });
       try { await this.loadTour(t.id); this.setState({ gate: '' }); }
       catch (e) { if (!this.authFail(e)) this.setState({ gate: (e && e.message) || 'Could not load this tournament.', gateRetry: true }); }
-    } else if (t && t.id) PM.pref('tid', t.id);
+    } else if (t && t.id) { PM.pref('tid', t.id); PM.setT(t.id); }
   }
   newTour() {
+    PM.setT(null);
     this.setState((st) => {
       const i = st.tours.findIndex((x) => !x.id);
       if (i >= 0) return { tid: i, switcherOpen: false, tab: 'details' };
@@ -1938,6 +1949,7 @@ class Component extends DCLogic {
       accent, t, ro, canEdit, title, titleShort: title,
       role, roleNote, canCreate, roleCards, matrix, signIn, signOut,
       signedAs: 'Signed in as Admin', gate: s.gate, gateRetry: s.gateRetry, loggedIn: !s.gate,
+      dashHref: t.id ? PM.link('tournament.html', t.id) : '', usersHref: PM.link('users.html', t.id),
       initials: s.user ? String(s.user.display_name || s.user.login_id || 'AD').replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() : 'AD',
       stCls: stClass(t.status),
       switcherOpen: s.switcherOpen,

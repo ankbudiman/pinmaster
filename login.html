@@ -110,13 +110,7 @@
 
   // ---------- step 3: signed in ----------
   var ROLE = { admin: 'Admin', team_manager: 'Team manager', marshal: 'Marshal' };
-  function signedIn(user) {
-    if (user.role === 'admin') { location.href = 'users.html'; return; }
-    show(h('h2', { class: 'pm-h', style: 'font-size:32px' }, 'You are signed in'),
-      msg('ok', (user.display_name || user.login_id) + ' · ' + (ROLE[user.role] || user.role)),
-      h('p', { text: 'Your screens are being connected to the system and will open from here. Nothing more to do right now.' }),
-      h('button', { class: 'pm-btn', type: 'button', onClick: function () { PM.api('auth.logout').catch(function () {}).finally(function () { PM.setSession(null); signInView(); }); } }, 'Sign out'));
-  }
+  function signedIn(user) { location.href = PM.landing(user); }
 
   var q = new URLSearchParams(location.search);
   signInView(q.get('expired') ? { kind: 'warn', text: 'Your session ended. Please sign in again.' } : null);

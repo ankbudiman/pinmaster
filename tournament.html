@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tournament · Pin Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pm.css">
+<style>
+.td-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px}
+.td-stats div{background:#F6F8FB;border:1px solid var(--line2);border-radius:10px;padding:12px 14px}
+.td-stats b{display:block;font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:34px;line-height:1}
+.td-stats span{font-size:12px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.tile{display:flex;gap:16px;align-items:center;min-height:104px;padding:18px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--navy);text-decoration:none;position:relative}
+.tile svg{flex:none;width:48px;height:48px;padding:11px;border-radius:12px;background:var(--navy);stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tile b{display:block;font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:24px;line-height:1.05;letter-spacing:.3px}
+.tile small{display:block;font-size:13px;color:var(--ink3);margin-top:3px;line-height:1.35}
+a.tile:hover{border-color:var(--accent);box-shadow:0 2px 0 var(--accent)}
+a.tile:focus-visible{outline:3px solid #1A5CFF;outline-offset:2px}
+.tile--soon{background:transparent;border-style:dashed;border-color:var(--field)}
+.tile--soon svg{background:#C9D1DD;stroke:#5A6B85}
+.tile--soon b{color:var(--ink3)}
+.td-nav{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.td-nav a{color:#C9D4E5;text-decoration:none;font-size:14px;font-weight:600}
+.td-nav a:hover{color:#fff;text-decoration:underline}
+</style>
+</head>
+<body>
+<header class="pm-top">
+  <svg width="18" height="23" viewBox="0 0 22 28" aria-hidden="true"><path d="M11 1C8.8 1 7.4 2.600 7.4 4.400c0 1.500.6 2.600 1.500 3.400C7.300 10.400 5 13.500 5 17.500c0 3 1.300 5.200 2.200 6.400.4.500.2 1.300.2 2.100h7.200c0-.8-.2-1.600.2-2.100.9-1.200 2.200-3.400 2.200-6.400 0-4-2.300-7.100-3.900-9.500.9-.8 1.500-1.900 1.500-3.400C14.600 2.600 13.200 1 11 1z" fill="#F2A93B"/></svg>
+  <span class="pm-brand" style="font-size:22px">PIN MASTER</span>
+  <nav class="td-nav" aria-label="Breadcrumb"><a id="hubl" href="hub.html">&larr; Tournament Hub</a></nav>
+  <span class="sp"></span>
+  <span id="who" style="font-size:14px;color:#C9D4E5"></span>
+  <button class="pm-btn" id="out" type="button">Sign out</button>
+</header>
+<main class="pm-wrap">
+  <div id="banner" aria-live="polite"></div>
+  <section class="pm-card" id="head" aria-busy="true"><p class="pm-help">Loading tournament…</p></section>
+  <section id="modules" hidden>
+    <h2 class="pm-h" style="font-size:28px;margin-bottom:12px">Modules</h2>
+    <div class="tiles" id="tiles"></div>
+  </section>
+</main>
+<script src="config.js"></script>
+<script src="pm.js"></script>
+<script>
+(function () {
+  var PM = window.PM, NS = 'http://www.w3.org/2000/svg';
+  function h(tag, attrs) { var k = [].slice.call(arguments, 2).filter(function (x) { return x != null && x !== false; }); return PM.h.apply(null, [tag, attrs].concat(k)); }
+  var sess = PM.getSession();
+  if (!sess || !sess.user) { PM.goLogin(); return; }
+  var user = sess.user, admin = user.role === 'admin';
+  // The tournament comes from the web address. A manager or marshal always gets their own; the server checks it too.
+  var tid = admin ? (PM.q('t') || PM.pref('tid') || '') : (user.tournament_id || '');
+  if (!tid) { location.replace(admin ? 'hub.html' : 'login.html'); return; }
+  if (admin) PM.pref('tid', tid);
+  document.getElementById('who').textContent = user.display_name || user.login_id;
+  if (!admin) document.getElementById('hubl').parentNode.hidden = true;
+
+  var ICON = {
+    setup: 'M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1 M15 5v4 M9 10v4 M17 15v4',
+    events: 'M4 5h7v6H4z M13 5h7v6h-7z M4 13h7v6H4z M13 13h7v6h-7z',
+    people: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M3 20c0-3.300 2.700-6 6-6s6 2.700 6 6 M16 6a3 3 0 0 1 0 6 M18 14c1.800.7 3 2.600 3 5',
+    lanes: 'M5 3v18 M10 3v18 M15 3v18 M20 3v18 M3 7h18',
+    score: 'M4 5h16v11H4z M8 20h8 M12 16v4 M8 10h2 M12 10h4',
+    trophy: 'M8 4h8v5a4 4 0 0 1-8 0z M8 6H5c0 3 1 4 3 4 M16 6h3c0 3-1 4-3 4 M12 13v4 M8 20h8',
+    report: 'M6 3h9l4 4v14H6z M14 3v5h5 M9 13h7 M9 17h7',
+    key: 'M8 15a4 4 0 1 1 3.500-6H21v3h-2v2h-3v-2h-4.500A4 4 0 0 1 8 15z'
+  };
+  function icon(k) {
+    var s = document.createElementNS(NS, 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('aria-hidden', 'true');
+    ICON[k].split(/\s(?=M)/).forEach(function (d) { var p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); s.appendChild(p); });
+    return s;
+  }
+  // roles: who sees the tile. href null = the screen is not connected yet.
+  var MODULES = [
+    { k: 'setup', t: 'Tournament Setup', d: 'Details, teams, rules, points and schedule.', roles: ['admin'], href: PM.link('setup.html', tid) },
+    { k: 'events', t: 'Events & Categories', d: 'Events, categories and games per event.', roles: ['admin'], href: PM.link('setup.html', tid, 'tab=events') },
+    { k: 'people', t: 'Participants', d: 'Athletes, Doubles partners and team entries.', roles: ['admin', 'team_manager'], href: null },
+    { k: 'lanes', t: 'Squads & Lanes', d: 'Lane draw for every block.', roles: ['admin', 'marshal'], href: null },
+    { k: 'score', t: 'Score Management', d: 'Enter and lock scores while the tournament is live.', roles: ['admin', 'marshal'], href: null },
+    { k: 'trophy', t: 'Leaderboard', d: 'Rankings, points and medals.', roles: ['admin', 'team_manager', 'marshal'], href: null },
+    { k: 'report', t: 'Reports', d: 'Official results and printouts.', roles: ['admin'], href: null },
+    { k: 'key', t: 'Users', d: 'Team manager and marshal logins, PIN emails.', roles: ['admin'], href: PM.link('users.html', tid) }
+  ];
+  function tile(m) {
+    var live = !!m.href;
+    var text = h('div', null, h('b', { text: m.t }), h('small', { text: m.d }), live ? null : h('span', { class: 'pm-tag', style: 'margin-top:8px', text: 'Coming soon' }));
+    return live ? h('a', { class: 'tile', href: m.href }, icon(m.k), text) : h('div', { class: 'tile tile--soon', role: 'note', 'aria-label': m.t + ', coming soon' }, icon(m.k), text);
+  }
+  function stat(n, l) { return h('div', null, h('b', { text: String(n) }), h('span', { text: l })); }
+
+  function render(r) {
+    document.title = (r.name || 'Tournament') + ' · Pin Master';
+    var c = r.counts, act = PM.cardAction(r);
+    var headKids = [
+      h('div', { style: 'display:flex;flex-wrap:wrap;gap:8px;align-items:center' },
+        h('span', { class: 'pm-tag' + (r.status === 'live' || r.status === 'regopen' ? ' pm-tag--ok' : (r.status === 'paused' || r.status === 'regclosed' ? ' pm-tag--warn' : '')), text: PM.STATUS[r.status] || r.status }),
+        act.incomplete && admin ? h('span', { class: 'pm-tag pm-tag--warn', text: 'Setup incomplete' }) : null),
+      h('h1', { class: 'pm-h', style: 'font-size:44px;line-height:1.05;overflow-wrap:anywhere', text: r.name || 'Untitled tournament' }),
+      h('p', { style: 'color:var(--ink3)', text: PM.fmtDates(r.start_date, r.end_date) + ' · ' + (r.venue || 'Venue not set') + (r.code ? ' · Code ' + r.code : '') }),
+      r.status === 'paused' && r.pause_reason ? h('p', { class: 'pm-msg pm-msg--warn', text: 'Paused: ' + r.pause_reason }) : null,
+      h('div', { class: 'td-stats' }, stat(c.players, 'Players'), stat(c.teams, 'Teams'), stat(c.events, 'Events on'), stat(c.categories, 'Categories'), stat(c.blocks, 'Blocks'), stat(c.scores, 'Scores entered')),
+      act.incomplete && admin ? h('div', { style: 'display:flex;flex-wrap:wrap;gap:12px;align-items:center' },
+        h('p', { style: 'font-size:15px', text: 'This tournament still needs teams, categories and a schedule before it can open.' }),
+        h('a', { class: 'pm-btn pm-btn--pri', href: act.href, style: 'text-decoration:none', text: 'Complete Setup' })) : null];
+    var head = document.getElementById('head');
+    head.replaceChildren.apply(head, headKids.filter(Boolean));
+    document.getElementById('head').setAttribute('aria-busy', 'false');
+    var tiles = MODULES.filter(function (m) { return m.roles.indexOf(user.role) >= 0; }).map(tile);
+    document.getElementById('tiles').replaceChildren.apply(document.getElementById('tiles'), tiles);
+    document.getElementById('modules').hidden = false;
+  }
+  function load() {
+    var banner = document.getElementById('banner'); banner.replaceChildren();
+    PM.api('hub.list', { tournament_id: tid }).then(function (d) { render(d.rows[0]); }).catch(function (e) {
+      if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return; }
+      document.getElementById('head').replaceChildren(); document.getElementById('head').setAttribute('aria-busy', 'false');
+      banner.replaceChildren(h('div', { class: 'pm-msg pm-msg--err', role: 'alert', style: 'display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between' },
+        h('span', { text: (e && e.message) || 'Could not load this tournament.' }),
+        admin ? h('a', { class: 'pm-btn pm-btn--sm', href: 'hub.html', style: 'text-decoration:none', text: 'Back to the hub' }) : h('button', { class: 'pm-btn pm-btn--sm', type: 'button', onClick: load, text: 'Try again' })));
+    });
+  }
+  document.getElementById('out').addEventListener('click', function () {
+    PM.api('auth.logout').catch(function () {}).finally(function () { PM.setSession(null); location.replace('login.html'); });
+  });
+  load();
+})();
+</script>
+</body>
+</html>

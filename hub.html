@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tournament Hub · Pin Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pm.css">
+<style>
+.hub-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.hub-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.hub-card h2{font-size:26px;line-height:1.1;overflow-wrap:anywhere}
+.hub-card h2 a{color:inherit;text-decoration:none}
+.hub-card h2 a:hover{text-decoration:underline}
+.hub-meta{font-size:14px;color:var(--ink3);display:flex;flex-direction:column;gap:2px}
+.hub-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);padding:12px 0}
+.hub-stats b{display:block;font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:30px;line-height:1}
+.hub-stats span{font-size:12px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px}
+.hub-act{margin-top:auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hub-act a{text-decoration:none}
+.hub-top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.hub-empty{border:1px dashed var(--field);border-radius:12px;padding:40px 20px;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center;background:#fff}
+</style>
+</head>
+<body>
+<header class="pm-top">
+  <svg width="18" height="23" viewBox="0 0 22 28" aria-hidden="true"><path d="M11 1C8.8 1 7.4 2.600 7.4 4.400c0 1.500.6 2.600 1.500 3.400C7.300 10.400 5 13.500 5 17.500c0 3 1.300 5.200 2.200 6.400.4.500.2 1.300.2 2.100h7.200c0-.8-.2-1.600.2-2.100.9-1.200 2.200-3.400 2.200-6.400 0-4-2.300-7.100-3.900-9.500.9-.8 1.500-1.900 1.500-3.400C14.600 2.600 13.200 1 11 1z" fill="#F2A93B"/></svg>
+  <span class="pm-brand" style="font-size:22px">PIN MASTER</span>
+  <span class="pm-h" style="font-size:22px;color:#C9D4E5">Tournament Hub</span>
+  <span class="sp"></span>
+  <a class="pm-btn" href="users.html" style="text-decoration:none">Users</a>
+  <span id="who" style="font-size:14px;color:#C9D4E5"></span>
+  <button class="pm-btn" id="out" type="button">Sign out</button>
+</header>
+<main class="pm-wrap">
+  <div class="hub-top">
+    <div>
+      <h1 class="pm-h" style="font-size:40px;line-height:1.05">Your tournaments</h1>
+      <p style="color:var(--ink3);margin-top:4px">Pick a tournament to open it, or create a new one.</p>
+    </div>
+    <a class="pm-btn pm-btn--pri" id="new" href="setup.html?new=1" style="text-decoration:none">+ Create New Tournament</a>
+  </div>
+  <div id="banner" aria-live="polite"></div>
+  <div id="list" class="hub-cards" aria-busy="true"></div>
+</main>
+<script src="config.js"></script>
+<script src="pm.js"></script>
+<script>
+(function () {
+  var PM = window.PM, h = PM.h;
+  var sess = PM.getSession();
+  if (!sess || !sess.user) { PM.goLogin(); return; }
+  if (sess.user.role !== 'admin') { location.replace(PM.home(sess.user)); return; }
+  document.getElementById('who').textContent = sess.user.display_name || sess.user.login_id;
+
+  var ORDER = { live: 0, paused: 1, regopen: 2, regclosed: 3, draft: 4, ended: 5 };
+  var TAG = { draft: '', regopen: 'ok', regclosed: 'warn', live: 'ok', paused: 'warn', ended: '' };
+  function msg(kind, text, retry) {
+    return h('div', { class: 'pm-msg pm-msg--' + kind, role: kind === 'err' ? 'alert' : 'status', style: 'display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between' },
+      h('span', { text: text }), retry ? h('button', { class: 'pm-btn pm-btn--sm', type: 'button', onClick: load }, 'Try again') : null);
+  }
+  function stat(n, label) { return h('div', null, h('b', { text: String(n) }), h('span', { text: label })); }
+
+  function card(r) {
+    var act = PM.cardAction(r), c = r.counts;
+    var scores = r.status === 'draft' || r.status === 'regopen' || r.status === 'regclosed' ? 'Scoring has not started' : (c.scores ? c.scores + ' scores entered' : 'No scores entered yet');
+    return h('article', { class: 'hub-card' },
+      h('div', { style: 'display:flex;flex-wrap:wrap;gap:8px;align-items:center' },
+        h('span', { class: 'pm-tag' + (TAG[r.status] ? ' pm-tag--' + TAG[r.status] : ''), text: PM.STATUS[r.status] || r.status }),
+        act.incomplete ? h('span', { class: 'pm-tag pm-tag--warn', text: 'Setup incomplete' }) : null),
+      h('h2', { class: 'pm-h' }, h('a', { href: PM.link('tournament.html', r.tournament_id), text: r.name || 'Untitled tournament' })),
+      h('div', { class: 'hub-meta' },
+        h('span', { text: PM.fmtDates(r.start_date, r.end_date) }),
+        h('span', { text: r.venue || 'Venue not set' })),
+      h('div', { class: 'hub-stats' }, stat(c.players, 'Players'), stat(c.events, 'Events'), stat(c.teams, 'Teams')),
+      h('p', { style: 'font-size:14px;color:var(--ink3)', text: 'Scores: ' + scores }),
+      h('div', { class: 'hub-act' },
+        h('a', { class: 'pm-btn pm-btn--pri', href: act.href, text: act.label }),
+        h('a', { class: 'pm-btn', href: PM.link('tournament.html', r.tournament_id), text: 'Dashboard' })));
+  }
+
+  function load() {
+    var list = document.getElementById('list'), banner = document.getElementById('banner');
+    list.setAttribute('aria-busy', 'true'); banner.replaceChildren(); list.replaceChildren(h('p', { class: 'pm-help', text: 'Loading tournaments…' }));
+    PM.api('hub.list').then(function (d) {
+      var rows = d.rows.slice().sort(function (a, b) {
+        var o = (ORDER[a.status] == null ? 9 : ORDER[a.status]) - (ORDER[b.status] == null ? 9 : ORDER[b.status]);
+        return o || String(b.created_at).localeCompare(String(a.created_at));
+      });
+      if (!rows.length) {
+        list.replaceChildren(h('div', { class: 'hub-empty', style: 'grid-column:1/-1' },
+          h('h2', { class: 'pm-h', style: 'font-size:28px', text: 'No tournaments yet' }),
+          h('p', { style: 'color:var(--ink3)', text: 'Create the first one. You will fill in its details, teams, categories and schedule step by step.' }),
+          h('a', { class: 'pm-btn pm-btn--pri', href: 'setup.html?new=1', style: 'text-decoration:none', text: '+ Create New Tournament' })));
+      } else list.replaceChildren.apply(list, rows.map(card));
+    }).catch(function (e) {
+      if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return; }
+      list.replaceChildren(); banner.replaceChildren(msg('err', (e && e.message) || 'Could not load the tournaments.', true));
+    }).finally(function () { list.setAttribute('aria-busy', 'false'); });
+  }
+  document.getElementById('out').addEventListener('click', function () {
+    PM.api('auth.logout').catch(function () {}).finally(function () { PM.setSession(null); location.replace('login.html'); });
+  });
+  load();
+})();
+</script>
+</body>
+</html>
