@@ -79,7 +79,7 @@ a.tile:focus-visible{outline:3px solid #1A5CFF;outline-offset:2px}
   var MODULES = [
     { k: 'setup', t: 'Tournament Setup', d: 'Details, teams, rules, points and schedule.', roles: ['admin'], href: PM.link('setup.html', tid) },
     { k: 'events', t: 'Events & Categories', d: 'Events, categories and games per event.', roles: ['admin'], href: PM.link('setup.html', tid, 'tab=events') },
-    { k: 'people', t: 'Participants', d: 'Athletes, Doubles partners and team entries.', roles: ['admin', 'team_manager'], href: null },
+    { k: 'people', t: 'Participants', d: 'Athletes, Doubles partners and team entries.', roles: ['admin', 'team_manager', 'marshal'], href: PM.link('participants.html', tid) },
     { k: 'lanes', t: 'Squads & Lanes', d: 'Lane draw for every block.', roles: ['admin', 'marshal'], href: null },
     { k: 'score', t: 'Score Management', d: 'Enter and lock scores while the tournament is live.', roles: ['admin', 'marshal'], href: null },
     { k: 'trophy', t: 'Leaderboard', d: 'Rankings, points and medals.', roles: ['admin', 'team_manager', 'marshal'], href: null },

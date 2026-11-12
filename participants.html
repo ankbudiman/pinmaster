@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Participants · Pin Master</title>
+<script src="./config.js"></script>
+<script src="./pm.js"></script>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Inter',system-ui,sans-serif;color:#0E1A2B;background:#F1F3F7}
+*{box-sizing:border-box}
+h1,h2,h3,p{margin:0}
+.pm-in{width:100%;height:44px;padding:0 12px;border:1px solid #7C8AA0;border-radius:8px;background:#fff;font:inherit;font-size:15px;color:#0E1A2B}
+.pm-in:disabled{background:#EEF1F5;color:#44546A;border-color:#B7C1D1}
+.pm-in:focus-visible,.pm-btn:focus-visible,.pm-tab:focus-visible,.pm-chip:focus-visible,.pm-row:focus-visible,.pm-sm:focus-visible,.pm-seg:focus-visible,.pm-step:focus-visible,.pm-hd-btn:focus-visible{outline:3px solid #1A5CFF;outline-offset:2px}
+.pm-lbl{display:block;font-size:13px;font-weight:600;color:#33445C;margin-bottom:6px}
+.pm-btn{height:44px;padding:0 18px;border-radius:8px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;border:1px solid #7C8AA0;background:#fff;color:#0E1A2B;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.pm-btn:hover{background:#EEF1F5}
+.pm-btn:disabled{opacity:.45;cursor:not-allowed}
+.pm-btn:disabled:hover{background:#fff}
+.pm-btn--pri{background:var(--accent);border-color:var(--accent)}
+.pm-btn--pri:hover{background:var(--accent);filter:brightness(.94)}
+.pm-btn--pri:disabled:hover{background:var(--accent);filter:none}
+.pm-btn--ghost{border-color:transparent;background:transparent;color:#8A1C12}
+.pm-btn--ghost:hover{background:#FDECEA}
+.pm-hd-btn{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 12px;border-radius:10px;border:1px solid #5A6B85;background:#16263D;color:#fff;font:inherit;cursor:pointer;text-align:left}
+.pm-hd-btn:hover{background:#1D3250}
+.pm-tab{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 18px;border:0;border-bottom:4px solid transparent;background:transparent;font:inherit;font-weight:600;font-size:15px;color:#44546A;cursor:pointer;white-space:nowrap}
+.pm-tab:hover{color:#0E1A2B}
+.pm-tab--on{color:#0E1A2B;border-bottom-color:var(--accent)}
+.pm-num{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 6px;border-radius:13px;background:#DDE3EC;color:#0E1A2B;font-size:13px;font-weight:700}
+.pm-tab--on .pm-num{background:#0E1A2B;color:#fff}
+.pm-chip{min-height:40px;padding:0 14px;border-radius:20px;border:1px solid #7C8AA0;background:#fff;color:#0E1A2B;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+.pm-chip:hover{background:#EEF1F5}
+.pm-chip--on{background:#0E1A2B;border-color:#0E1A2B;color:#fff}
+.pm-chip--on:hover{background:#1D3250}
+.pm-chip:disabled{cursor:not-allowed;opacity:.7}
+.pm-row{width:100%;display:block;text-align:left;font:inherit;color:#0E1A2B;background:#fff;border:1px solid #C3CBD8;border-radius:10px;padding:10px 14px;cursor:pointer}
+.pm-row:hover{border-color:#7C8AA0}
+.pm-row--on{border:2px solid #0E1A2B;padding:9px 13px;background:#FFF8EA}
+.pm-step{width:44px;height:44px;border-radius:8px;border:1px solid #7C8AA0;background:#fff;font:inherit;font-size:20px;font-weight:600;color:#0E1A2B;cursor:pointer;line-height:1}
+.pm-step:hover{background:#EEF1F5}
+.pm-step:disabled{opacity:.4;cursor:not-allowed}
+.pm-seg{flex:1 1 220px;min-height:56px;padding:10px 14px;border-radius:10px;border:1px solid #7C8AA0;background:#fff;font:inherit;text-align:left;color:#0E1A2B;cursor:pointer}
+.pm-seg:hover{background:#EEF1F5}
+.pm-seg--on{background:#FFF8EA;border:2px solid #0E1A2B;padding:9px 13px}
+.pm-st{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:13px;font-size:12px;font-weight:700;white-space:nowrap}
+.pm-st--draft{background:#E7ECF3;color:#33445C}
+.pm-st--open{background:#DDF3E7;color:#0B5A38}
+.pm-st--live{background:#FDE3E1;color:#8A1C12}
+.pm-st--warn{background:#FFF1CF;color:#6B4400}
+.pm-st--end{background:#0E1A2B;color:#fff}
+.pm-role{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:12px;border:1px solid #7C8AA0;font-size:12px;font-weight:600}
+.pm-tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:11px;background:#E7ECF3;color:#33445C;font-size:12px;font-weight:600;white-space:nowrap}
+.pm-g{display:grid;grid-template-columns:minmax(140px,1.5fr) 82px minmax(84px,1fr) 78px minmax(110px,1.1fr) 72px 186px;column-gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid #D5DBE4;font-size:14px}
+.pm-g--h{font-size:12px;font-weight:700;color:#33445C;letter-spacing:.4px;background:#F1F3F7;border-top:1px solid #D5DBE4}
+.pm-g:hover:not(.pm-g--h){background:#FAFBFD}
+.pm-sm{height:36px;padding:0 12px;border-radius:8px;border:1px solid #7C8AA0;background:#fff;font:inherit;font-size:13px;font-weight:600;color:#0E1A2B;cursor:pointer}
+.pm-sm:hover{background:#EEF1F5}
+.pm-sm--dng{color:#8A1C12;border-color:#E5887E}
+.pm-sm--dng:hover{background:#FDECEA}
+.pm-cards{display:none;flex-direction:column;gap:10px}
+.pm-cards--on{display:flex !important}
+.pm-tbl--off{display:none !important}
+.pm-bar{height:8px;border-radius:4px;background:#DDE3EC;overflow:hidden;flex:1 1 80px}
+.pm-line{display:grid;grid-template-columns:44px minmax(0,1fr);gap:0 12px;padding:12px 0;border-bottom:1px solid #D5DBE4}
+@media (max-width:760px){.pm-tblwrap{display:none}.pm-cards{display:flex}}
+</style>
+</helmet>
+
+<div style="--accent: {{accent}}; min-height: 100vh; background: #F1F3F7">
+
+<!-- GATE: loading or load error -->
+  <sc-if value="{{gate}}" hint-placeholder-val="{{ false }}">
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px">
+      <div style="width: min(420px, 100%); background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 28px; display: flex; flex-direction: column; gap: 14px">
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 30px; letter-spacing: 1.5px">PIN MASTER</span>
+        <p style="font-size: 16px; line-height: 1.45" role="status">{{gate}}</p>
+        <sc-if value="{{gateRetry}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button class="pm-btn pm-btn--pri" onClick="{{reload}}">Try again</button>
+            <a class="pm-btn" href="{{dashHref}}" style="text-decoration: none">Back to the dashboard</a>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{loggedIn}}" hint-placeholder-val="{{ true }}">
+
+  <!-- Top bar -->
+  <div style="background: #0E1A2B; color: #fff">
+    <div style="max-width: 1440px; margin: 0 auto; padding: 12px 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="22" height="28" viewBox="0 0 22 28" aria-hidden="true"><path d="M11 1c-2.2 0-3.6 1.6-3.6 3.6 0 1.5.6 2.6 1.5 3.4C7.300 10.400 5 13.500 5 17.500c0 3 1.300 5.200 2.200 6.400.4.500.2 1.300.2 2.100h7.200c0-.8-.2-1.600.2-2.100.9-1.200 2.200-3.400 2.200-6.400 0-4-2.300-7.100-3.900-9.500.9-.8 1.500-1.900 1.500-3.400C14.600 2.600 13.200 1 11 1z" fill="{{accent}}"></path></svg>
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 1.5px">PIN MASTER</span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <sc-if value="{{isAdminUser}}" hint-placeholder-val="{{ true }}">
+          <a class="pm-hd-btn" href="hub.html" style="min-height: 44px; text-decoration: none; color: #fff">Hub</a>
+        </sc-if>
+        <a class="pm-hd-btn" href="{{dashHref}}" style="min-height: 44px; text-decoration: none; color: #fff">Dashboard</a>
+        <span style="width: 40px; height: 40px; border-radius: 20px; background: #E7ECF3; color: #0E1A2B; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center" aria-label="Your account initials">{{initials}}</span>
+        <button class="pm-hd-btn" style="min-height: 44px" onClick="{{signOut}}">Sign out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Title band -->
+  <div style="background: #fff; border-bottom: 1px solid #D5DBE4">
+    <div style="max-width: 1440px; margin: 0 auto; padding: 20px 20px 0">
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+            <span class="{{stCls}}">{{t.status}}</span>
+            <span class="{{phaseCls}}">{{phaseText}}</span>
+            <span class="pm-role">{{signedAs}}</span>
+          </div>
+          
+          <h1 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 44px; line-height: 1.05; letter-spacing: 0.3px; overflow-wrap: anywhere">Athlete registration</h1>
+          <p style="font-size: 15px; color: #44546A">{{title}} · {{venueLine}}</p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-bottom: 4px">
+          <sc-if value="{{canAdd}}" hint-placeholder-val="{{ true }}">
+            <button class="pm-btn" onClick="{{goImport}}">Import from Excel or CSV</button>
+            <button class="pm-btn pm-btn--pri" onClick="{{openAdd}}">+ Add athlete</button>
+          </sc-if>
+        </div>
+      </div>
+      <div style="display: flex; overflow-x: auto; margin-top: 16px; gap: 4px" role="group" aria-label="Registration sections">
+        <sc-for list="{{tabs}}" as="tb" hint-placeholder-count="4">
+          <button class="{{tb.cls}}" onClick="{{tb.go}}" aria-current="{{tb.cur}}">
+            <span>{{tb.label}}</span>
+            <sc-if value="{{tb.hasCount}}"><span class="pm-num">{{tb.count}}</span></sc-if>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div style="max-width: 1440px; margin: 0 auto; padding: 24px 20px 48px; display: flex; flex-direction: column; gap: 20px">
+
+    <sc-if value="{{roleNote}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 10px; background: #E8F0FF; border: 1px solid #8DB2FF; color: #0F2A63">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="10" cy="10" r="8.500" fill="none" stroke="#0F2A63" stroke-width="2"></circle><path d="M10 9v5M10 6v.5" stroke="#0F2A63" stroke-width="2" stroke-linecap="round"></path></svg>
+        <p style="font-size: 15px; line-height: 1.45">{{roleNote}}</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{phaseNote}}" hint-placeholder-val="{{ false }}">
+      <div style="padding: 14px 16px; border-radius: 10px; background: #FFF4DB; border: 1px solid #E3B65B; color: #4D3200">
+        <p style="font-size: 15px; line-height: 1.45">{{phaseNote}}</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{msg}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 10px; background: #DDF3E7; border: 1px solid #5FB98B; color: #0B3D26">
+        <p style="font-size: 15px; line-height: 1.45; font-weight: 600">{{msg}}</p>
+        <button class="pm-sm" onClick="{{clearMsg}}">Dismiss</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{errText}}" hint-placeholder-val="{{ false }}">
+      <div role="alert" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 10px; background: #FDECEA; border: 1px solid #E5887E; color: #6B130B">
+        <p style="font-size: 15px; line-height: 1.45; font-weight: 600">{{errText}}</p>
+        <button class="pm-sm" onClick="{{clearErr}}">Dismiss</button>
+      </div>
+    </sc-if>
+
+    <!-- ATHLETES -->
+    <sc-if value="{{isAthletes}}" hint-placeholder-val="{{ true }}">
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px">
+        <sc-for list="{{tiles}}" as="tl" hint-placeholder-count="4">
+          <div style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 13px; font-weight: 600; color: #44546A">{{tl.label}}</span>
+            <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 36px; line-height: 1">{{tl.value}}</span>
+            <span style="font-size: 13px; color: #44546A">{{tl.hint}}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+        <section style="flex: 999 1 560px; min-width: 0; background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; display: flex; flex-direction: column">
+          <div style="padding: 20px; display: flex; flex-direction: column; gap: 14px; border-bottom: 1px solid #D5DBE4">
+            <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+              <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">{{listTitle}}</h2>
+              <div style="flex: 1 1 240px; max-width: 360px">
+                <label class="pm-lbl" for="q-search">Search by name{{searchExtra}}</label>
+                <input class="pm-in" id="q-search" type="text" value="{{q}}" onInput="{{onQ}}" placeholder="Type to filter">
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px" role="group" aria-label="Filter by category">
+                <span style="font-size: 13px; font-weight: 600; color: #44546A; min-width: 70px">Category</span>
+                <sc-for list="{{catFilter}}" as="c" hint-placeholder-count="4">
+                  <button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">{{c.label}}</button>
+                </sc-for>
+              </div>
+              <sc-if value="{{showTeamFilter}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px" role="group" aria-label="Filter by team">
+                  <span style="font-size: 13px; font-weight: 600; color: #44546A; min-width: 70px">Team</span>
+                  <sc-for list="{{teamFilter}}" as="c" hint-placeholder-count="6">
+                    <button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">{{c.label}}</button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px" role="group" aria-label="Filter by status">
+                <span style="font-size: 13px; font-weight: 600; color: #44546A; min-width: 70px">Status</span>
+                <sc-for list="{{statusFilter}}" as="c" hint-placeholder-count="3">
+                  <button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">{{c.label}}</button>
+                </sc-for>
+              </div>
+            </div>
+            <p style="font-size: 14px; color: #44546A">{{countLine}}</p>
+          </div>
+
+          <sc-if value="{{noRows}}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 20px; padding: 28px 16px; text-align: center; border: 1px dashed #7C8AA0; border-radius: 10px; font-size: 15px; color: #44546A; line-height: 1.45">{{emptyMsg}}</p>
+          </sc-if>
+
+          <!-- dense table (laptop) -->
+          <div class="{{tblCls}}">
+            <div class="pm-tblwrap" style="overflow-x: auto">
+              <div style="min-width: 840px" role="table" aria-label="Registered athletes">
+                <div class="pm-g pm-g--h" role="row">
+                  <span role="columnheader">NAME AND ID</span><span role="columnheader">BORN</span><span role="columnheader">CATEGORY</span><span role="columnheader">TEAM</span><span role="columnheader">EVENTS</span><span role="columnheader">STATUS</span><span role="columnheader">ACTIONS</span>
+                </div>
+                <sc-for list="{{rows}}" as="a" hint-placeholder-count="6">
+                  <div class="pm-g" role="row">
+                    <div role="cell" style="min-width: 0">
+                      <strong style="display: block; font-size: 15px; overflow-wrap: anywhere">{{a.name}}</strong>
+                      <span style="font-size: 12px; font-weight: 700; color: #1F2E45">{{a.pid}}</span><span style="font-size: 12px; color: #44546A"> · {{a.ic}}</span>
+                      <sc-if value="{{a.hasNote}}"><span style="display: block; font-size: 12px; color: #8A1C12; margin-top: 2px">{{a.note}}</span></sc-if>
+                    </div>
+                    <div role="cell"><span>{{a.dob}}</span><span style="display: block; font-size: 12px; color: #44546A">Age {{a.age}}</span></div>
+                    <div role="cell">{{a.catName}}</div>
+                    <div role="cell">{{a.team}}</div>
+                    <div role="cell" style="min-width: 0">
+                      <span>{{a.evText}}</span>
+                      <sc-if value="{{a.hasPartner}}"><span style="display: block; font-size: 12px; color: #44546A">Doubles with {{a.partnerName}}</span></sc-if>
+                    </div>
+                    <div role="cell"><span class="{{a.stCls}}">{{a.status}}</span></div>
+                    <div role="cell" style="display: flex; flex-wrap: wrap; gap: 6px">
+                      <sc-if value="{{a.canChange}}"><button class="pm-sm" onClick="{{a.edit}}" aria-label="{{a.editLabel}}">Edit</button></sc-if>
+                      <sc-if value="{{a.canChange}}"><button class="pm-sm" onClick="{{a.sub}}" aria-label="{{a.subLabel}}">Substitute</button></sc-if>
+                      <sc-if value="{{a.canChange}}"><button class="pm-sm pm-sm--dng" onClick="{{a.withdraw}}" aria-label="{{a.wdLabel}}">Withdraw</button></sc-if>
+                      <sc-if value="{{a.canRestore}}"><button class="pm-sm" onClick="{{a.restore}}" aria-label="{{a.restoreLabel}}">Restore</button></sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <!-- cards (phone, and always for Marshal) -->
+          <div class="{{cardsCls}}" style="padding: 20px">
+            <sc-for list="{{rows}}" as="a" hint-placeholder-count="4">
+              <div style="border: 1px solid #C3CBD8; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px">
+                  <strong style="font-size: 18px; overflow-wrap: anywhere">{{a.name}}</strong>
+                  <span class="{{a.stCls}}">{{a.status}}</span>
+                </div>
+                <span style="font-size: 15px; color: #33445C">{{a.pid}} · {{a.catName}} · {{a.team}}</span>
+                <sc-if value="{{a.showPrivate}}">
+                  <span style="font-size: 14px; color: #44546A">{{a.ic}} · Born {{a.dob}} (age {{a.age}})</span>
+                </sc-if>
+                <sc-if value="{{a.showPrivate}}">
+                  <span style="font-size: 14px; color: #33445C">{{a.evText}}</span>
+                </sc-if>
+                <sc-if value="{{a.hasNote}}"><span style="font-size: 14px; color: #8A1C12">{{a.note}}</span></sc-if>
+                <sc-if value="{{a.hasActions}}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px">
+                    <sc-if value="{{a.canChange}}"><button class="pm-btn" onClick="{{a.edit}}" aria-label="{{a.editLabel}}">Edit</button></sc-if>
+                    <sc-if value="{{a.canChange}}"><button class="pm-btn" onClick="{{a.sub}}" aria-label="{{a.subLabel}}">Substitute</button></sc-if>
+                    <sc-if value="{{a.canChange}}"><button class="pm-btn pm-btn--ghost" onClick="{{a.withdraw}}" aria-label="{{a.wdLabel}}">Withdraw</button></sc-if>
+                    <sc-if value="{{a.canRestore}}"><button class="pm-btn" onClick="{{a.restore}}" aria-label="{{a.restoreLabel}}">Restore</button></sc-if>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <!-- Side panel -->
+        <aside style="flex: 1 1 340px; max-width: 480px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+          <!-- summary -->
+          <sc-if value="{{showSummary}}" hint-placeholder-val="{{ true }}">
+            <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+              <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Entry rules</h2>
+              <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+                <span style="flex: 1 1 160px; font-size: 15px; font-weight: 600">Bowlers per team in each category</span>
+                <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 32px">{{limitTxt}}</span>
+              </div>
+              <p style="font-size: 14px; color: #44546A; line-height: 1.45">{{eventsLine}}</p>
+              <p style="font-size: 14px; color: #44546A; line-height: 1.45">{{limitNote}}</p>
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <sc-for list="{{catSummary}}" as="c" hint-placeholder-count="4">
+                  <div style="padding: 10px 12px; background: #F1F3F7; border-radius: 8px">
+                    <strong style="display: block; font-size: 14px">{{c.name}}</strong>
+                    <span style="font-size: 13px; color: #33445C; line-height: 1.4">{{c.text}}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{noCats}}"><p style="font-size: 14px; color: #44546A">No categories yet. The Admin adds them in Tournament setup.</p></sc-if>
+              <p style="font-size: 14px; color: #44546A; line-height: 1.45">Masters Finals needs no sign-up. The top bowlers from All-Events qualify on their own.</p>
+            </section>
+          </sc-if>
+
+          <!-- add / edit form -->
+          <sc-if value="{{showForm}}" hint-placeholder-val="{{ false }}">
+            <section style="background: #fff; border: 2px solid #0E1A2B; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+              <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">{{formTitle}}</h2>
+              <div>
+                <label class="pm-lbl" for="a-name">Full name</label>
+                <input class="pm-in" id="a-name" type="text" value="{{form.name}}" onInput="{{onF.name}}" autocomplete="off">
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 12px">
+                <div style="flex: 1 1 170px; min-width: 0">
+                  <label class="pm-lbl" for="a-ic">ID or passport no.</label>
+                  <input class="pm-in" id="a-ic" type="text" value="{{form.ic}}" onInput="{{onF.ic}}" placeholder="150304-10-5541" autocomplete="off">
+                </div>
+                <div style="flex: 1 1 150px; min-width: 0">
+                  <label class="pm-lbl" for="a-dob">Date of birth</label>
+                  <input class="pm-in" id="a-dob" type="date" value="{{form.dob}}" onInput="{{onF.dob}}">
+                </div>
+              </div>
+              <div>
+                <p class="pm-lbl">Category</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="Category">
+                  <sc-for list="{{catPick}}" as="c" hint-placeholder-count="4">
+                    <button class="{{c.cls}}" onClick="{{c.pick}}" disabled="{{c.off}}" aria-pressed="{{c.on}}">{{c.label}}</button>
+                  </sc-for>
+                </div>
+                <sc-if value="{{isEdit}}"><p style="font-size: 13px; color: #44546A; margin-top: 6px">A bowler stays in one category for the whole tournament. To move them, withdraw and register again.</p></sc-if>
+              </div>
+              <div>
+                <p class="pm-lbl">Team</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="Team">
+                  <sc-for list="{{teamPick}}" as="c" hint-placeholder-count="5">
+                    <button class="{{c.cls}}" onClick="{{c.pick}}" disabled="{{c.off}}" aria-pressed="{{c.on}}">{{c.label}}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <sc-if value="{{hasFormCat}}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <p class="pm-lbl">Events entered</p>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="Events entered">
+                    <sc-for list="{{evPick}}" as="c" hint-placeholder-count="3">
+                      <button class="{{c.cls}}" onClick="{{c.toggle}}" aria-pressed="{{c.on}}">{{c.label}}</button>
+                    </sc-for>
+                  </div>
+                  <p style="font-size: 13px; color: #44546A; margin-top: 6px">{{allEventsText}}</p>
+                </div>
+                <sc-for list="{{tmRows}}" as="tr" hint-placeholder-count="1">
+                  <div>
+                    <p class="pm-lbl">{{tr.label}}</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                      <sc-for list="{{tr.chips}}" as="c" hint-placeholder-count="3">
+                        <button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}" disabled="{{c.off}}">{{c.label}}</button>
+                      </sc-for>
+                    </div>
+                    <p style="font-size: 13px; color: #44546A; margin-top: 6px">{{tr.help}}</p>
+                  </div>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{showPartner}}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <p class="pm-lbl">Doubles partner (optional)</p>
+                  <div style="display: flex; flex-direction: column; gap: 6px">
+                    <sc-for list="{{partnerOpts}}" as="p" hint-placeholder-count="3">
+                      <button class="{{p.cls}}" onClick="{{p.pick}}" aria-pressed="{{p.on}}">
+                        <strong style="font-size: 14px">{{p.label}}</strong>
+                        <span style="display: block; font-size: 12px; color: #44546A">{{p.sub}}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{hasWarns}}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 10px 12px; border-radius: 8px; background: #FFF4DB; border: 1px solid #E3B65B; color: #4D3200; display: flex; flex-direction: column; gap: 4px">
+                  <strong style="font-size: 14px">Check these (you can still save)</strong>
+                  <sc-for list="{{warnList}}" as="w" hint-placeholder-count="1"><span style="font-size: 14px; line-height: 1.4">{{w.text}}</span></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{showErrs}}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 10px 12px; border-radius: 8px; background: #FDECEA; border: 1px solid #E5887E; color: #6B130B; display: flex; flex-direction: column; gap: 4px">
+                  <strong style="font-size: 14px">Fix these before saving</strong>
+                  <sc-for list="{{errList}}" as="w" hint-placeholder-count="2"><span style="font-size: 14px; line-height: 1.4">{{w.text}}</span></sc-for>
+                </div>
+              </sc-if>
+              <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between">
+                <button class="pm-btn" onClick="{{closePanel}}">Cancel</button>
+                <button class="pm-btn pm-btn--pri" onClick="{{saveAthlete}}" disabled="{{busy}}">{{saveLabel}}</button>
+              </div>
+            </section>
+          </sc-if>
+
+          <!-- withdraw -->
+          <sc-if value="{{showWd}}" hint-placeholder-val="{{ false }}">
+            <section style="background: #fff; border: 2px solid #8A1C12; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+              <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Withdraw {{targetName}}</h2>
+              <p style="font-size: 15px; color: #33445C; line-height: 1.45">{{targetLine}}</p>
+              <sc-if value="{{targetHasPartner}}"><p style="font-size: 14px; font-weight: 600; color: #6B4400">{{targetPartnerNote}}</p></sc-if>
+              <div>
+                <p class="pm-lbl">Reason (required)</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="Reason">
+                  <sc-for list="{{reasonPick}}" as="c" hint-placeholder-count="5">
+                    <button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">{{c.label}}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <div>
+                <label class="pm-lbl" for="w-note">Note (optional)</label>
+                <input class="pm-in" id="w-note" type="text" value="{{wd.note}}" onInput="{{onWd.note}}" autocomplete="off">
+              </div>
+              <sc-if value="{{afterCloseNote}}"><p style="font-size: 14px; font-weight: 600; color: #6B4400">{{afterCloseNote}}</p></sc-if>
+              <sc-if value="{{wdErr}}"><p style="font-size: 14px; font-weight: 600; color: #B42318" role="alert">{{wdErr}}</p></sc-if>
+              <p style="font-size: 13px; color: #44546A">This is written to the activity log with your name and the time.</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between">
+                <button class="pm-btn" onClick="{{closePanel}}">Cancel</button>
+                <button class="pm-btn pm-btn--pri" onClick="{{confirmWd}}" disabled="{{busy}}">{{wdLabel}}</button>
+              </div>
+            </section>
+          </sc-if>
+
+          <!-- substitute -->
+          <sc-if value="{{showSub}}" hint-placeholder-val="{{ false }}">
+            <section style="background: #fff; border: 2px solid #0E1A2B; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+              <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Substitute for {{targetName}}</h2>
+              <p style="font-size: 15px; color: #33445C; line-height: 1.45">The new bowler takes the same category, team, events and doubles partner. {{targetName}} is marked as withdrawn.</p>
+              <div>
+                <label class="pm-lbl" for="s-name">New bowler: full name</label>
+                <input class="pm-in" id="s-name" type="text" value="{{sub.name}}" onInput="{{onSub.name}}" autocomplete="off">
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 12px">
+                <div style="flex: 1 1 170px; min-width: 0">
+                  <label class="pm-lbl" for="s-ic">ID or passport no.</label>
+                  <input class="pm-in" id="s-ic" type="text" value="{{sub.ic}}" onInput="{{onSub.ic}}" autocomplete="off">
+                </div>
+                <div style="flex: 1 1 150px; min-width: 0">
+                  <label class="pm-lbl" for="s-dob">Date of birth</label>
+                  <input class="pm-in" id="s-dob" type="date" value="{{sub.dob}}" onInput="{{onSub.dob}}">
+                </div>
+              </div>
+              <div>
+                <p class="pm-lbl">Reason (required)</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="Reason">
+                  <sc-for list="{{reasonPick}}" as="c" hint-placeholder-count="5">
+                    <button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">{{c.label}}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <sc-if value="{{afterCloseNote}}"><p style="font-size: 14px; font-weight: 600; color: #6B4400">{{afterCloseNote}}</p></sc-if>
+              <sc-if value="{{hasWarns}}">
+                <div style="padding: 10px 12px; border-radius: 8px; background: #FFF4DB; border: 1px solid #E3B65B; color: #4D3200; display: flex; flex-direction: column; gap: 4px">
+                  <strong style="font-size: 14px">Check these (you can still save)</strong>
+                  <sc-for list="{{warnList}}" as="w" hint-placeholder-count="1"><span style="font-size: 14px; line-height: 1.4">{{w.text}}</span></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{showErrs}}">
+                <div style="padding: 10px 12px; border-radius: 8px; background: #FDECEA; border: 1px solid #E5887E; color: #6B130B; display: flex; flex-direction: column; gap: 4px">
+                  <strong style="font-size: 14px">Fix these before saving</strong>
+                  <sc-for list="{{errList}}" as="w" hint-placeholder-count="2"><span style="font-size: 14px; line-height: 1.4">{{w.text}}</span></sc-for>
+                </div>
+              </sc-if>
+              <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between">
+                <button class="pm-btn" onClick="{{closePanel}}">Cancel</button>
+                <button class="pm-btn pm-btn--pri" onClick="{{confirmSub}}" disabled="{{busy}}">{{subLabel}}</button>
+              </div>
+            </section>
+          </sc-if>
+        </aside>
+      </div>
+    </sc-if>
+
+    <!-- IMPORT -->
+    <sc-if value="{{isImport}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+        <section style="flex: 1 1 380px; min-width: 0; background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <div>
+            <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Paste rows from Excel or CSV</h2>
+            <p style="font-size: 15px; color: #44546A; margin-top: 4px; line-height: 1.45">Copy the cells in Excel and paste them here. One bowler per line. Columns, in this order: name, ID, date of birth, category, team, events. Events is optional and defaults to Singles and Doubles.</p>
+          </div>
+          <div>
+            <label class="pm-lbl" for="i-text">Rows</label>
+            <textarea class="pm-in" id="i-text" style="height: 240px; padding: 10px 12px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; line-height: 1.5; resize: vertical" onInput="{{onImportText}}" disabled="{{importOff}}" value="{{importText}}"></textarea>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px">
+            <button class="pm-btn" onClick="{{loadExample}}" disabled="{{importOff}}">Load example rows</button>
+            <button class="pm-btn pm-btn--ghost" onClick="{{clearImport}}" disabled="{{importOff}}">Clear</button>
+          </div>
+          <p style="font-size: 14px; color: #44546A; line-height: 1.45">Dates can be 2015-03-04 or 04/03/2015. Events: the event names separated by semicolons, for example singles;doubles;trios. Rows with problems are skipped and listed so you can fix them.</p>
+        </section>
+
+        <section style="flex: 1.4 1 480px; min-width: 0; background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+            <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Check before importing</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <span class="pm-st pm-st--open">{{readyTxt}}</span>
+              <span class="pm-st pm-st--live">{{badTxt}}</span>
+            </div>
+          </div>
+          <sc-if value="{{noImportRows}}"><p style="padding: 28px 16px; text-align: center; border: 1px dashed #7C8AA0; border-radius: 10px; font-size: 15px; color: #44546A; line-height: 1.45">{{importEmptyMsg}}</p></sc-if>
+          <div>
+            <sc-for list="{{importRows}}" as="r" hint-placeholder-count="5">
+              <div class="pm-line">
+                <span class="pm-tag" style="justify-self: start; align-self: start">{{r.line}}</span>
+                <div style="min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px">
+                    <strong style="font-size: 15px; overflow-wrap: anywhere">{{r.name}}</strong>
+                    <span class="{{r.cls}}">{{r.label}}</span>
+                  </div>
+                  <span style="font-size: 13px; color: #44546A">{{r.detail}}</span>
+                  <sc-if value="{{r.hasMsg}}"><span style="font-size: 14px; font-weight: 600; color: {{r.msgColor}}; line-height: 1.4">{{r.msg}}</span></sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{importMsg}}"><p style="font-size: 14px; font-weight: 600; color: #0B5A38">{{importMsg}}</p></sc-if>
+          <div style="display: flex; justify-content: flex-end">
+            <button class="pm-btn pm-btn--pri" onClick="{{doImport}}" disabled="{{importGoOff}}">{{importLabel}}</button>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+
+    <!-- TEAMS OVERVIEW -->
+    <sc-if value="{{isTeams}}" hint-placeholder-val="{{ false }}">
+      <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+        <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Teams overview</h2>
+        <p style="font-size: 15px; color: #44546A; line-height: 1.45">{{teamsNote}}</p>
+      </section>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; align-items: start">
+        <sc-for list="{{ovCards}}" as="o" hint-placeholder-count="5">
+          <section style="{{o.boxStyle}}">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px">
+              <h3 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">{{o.team}}</h3>
+              <div style="display: flex; gap: 6px; align-items: center">
+                <sc-if value="{{o.mine}}"><span class="pm-tag">Your team</span></sc-if>
+                <span class="pm-st pm-st--draft">{{o.total}} bowlers</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <sc-for list="{{o.cats}}" as="c" hint-placeholder-count="4">
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px"><span>{{c.name}}</span><strong>{{c.count}} of {{c.limit}}{{c.fullTxt}}</strong></div>
+                  <div class="pm-bar"><div style="{{c.barStyle}}"></div></div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- LOG -->
+    <sc-if value="{{isLog}}" hint-placeholder-val="{{ false }}">
+      <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+        <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Activity log</h2>
+        <p style="font-size: 15px; color: #44546A; line-height: 1.45">{{logNote}}</p>
+        <sc-if value="{{noLog}}"><p style="padding: 24px 0; font-size: 15px; color: #44546A">Nothing logged yet.</p></sc-if>
+        <div>
+          <sc-for list="{{logRows}}" as="l" hint-placeholder-count="5">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 12px 0; border-bottom: 1px solid #D5DBE4; align-items: baseline">
+              <span style="flex: 0 0 130px; font-size: 13px; font-weight: 600; color: #44546A">{{l.at}}</span>
+              <span class="{{l.tagCls}}">{{l.tag}}</span>
+              <span style="flex: 1 1 280px; min-width: 0; font-size: 15px; line-height: 1.4">{{l.text}}</span>
+              <span style="flex: 0 0 auto; font-size: 13px; color: #44546A">{{l.who}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F2A93B","options":["#F2A93B","#2FB5A0","#E8594F","#6C8CFF"]}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { gate: 'Loading…', gateRetry: false, user: null, tid: '', d: null, tab: 'athletes', panel: 'none', editId: '', target: '', tried: false,
+      msg: '', errText: '', srvErr: '', busy: false, form: this.blankForm(), wd: { reason: '', note: '' }, sub: { name: '', ic: '', dob: '' },
+      q: '', fCat: 'all', fTeam: 'all', fStatus: 'Active', importText: '' };
+  }
+  blankForm() { return { name: '', ic: '', dob: '', catId: '', teamId: '', ev: {}, tm: {}, partner: '' }; }
+
+  // ---------- server connection ----------
+  componentDidMount() {
+    const sess = window.PM && PM.getSession();
+    if (!sess || !sess.user) { PM.goLogin(); return; }
+    const user = sess.user, admin = user.role === 'admin';
+    const tid = admin ? (PM.q('t') || PM.pref('tid') || '') : (user.tournament_id || '');
+    if (!tid) { location.replace(admin ? 'hub.html' : 'login.html'); return; }
+    if (admin) PM.pref('tid', tid);
+    this.setState({ user, tid });
+    this.load(tid);
+  }
+  authFail(e) {
+    if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return true; }
+    return false;
+  }
+  async load(tid) {
+    this.setState({ gate: 'Loading…', gateRetry: false });
+    try {
+      const d = await PM.api('participants.load', { tournament_id: tid || this.state.tid });
+      document.title = (d.tournament.name || 'Tournament') + ' · Participants';
+      this.setState({ d, gate: '' });
+    } catch (e) {
+      if (this.authFail(e)) return;
+      this.setState({ gate: (e && e.message) || 'Could not load the participants.', gateRetry: true });
+    }
+  }
+  signOut() { PM.api('auth.logout').catch(() => {}).finally(() => { PM.setSession(null); location.replace('login.html'); }); }
+  // One change to the server. The server answers with the fresh list, so the screen never drifts from the sheet.
+  async act(action, params, okMsg, onDone) {
+    if (this.state.busy) return;
+    this.setState({ busy: true, srvErr: '', errText: '' });
+    try {
+      const r = await PM.api(action, Object.assign({ tournament_id: this.state.tid }, params));
+      this.setState({ d: r, busy: false });
+      if (onDone) onDone(r); else this.setState({ panel: 'none', tried: false, msg: okMsg(r) });
+    } catch (e) {
+      if (this.authFail(e)) return;
+      if (e && e.code === 'conflict') { this.setState({ busy: false, panel: 'none', tried: false, errText: e.message }); this.load(this.state.tid); this.setState({ gate: '' }); return; }
+      const inPanel = this.state.panel !== 'none';
+      this.setState({ busy: false, srvErr: inPanel ? ((e && e.message) || 'Could not save. Try again.') : '', errText: inPanel ? '' : ((e && e.message) || 'Could not save. Try again.'), tried: true });
+    }
+  }
+
+  renderVals() {
+    const s = this.state;
+    const REASONS = ['Injury', 'Illness', 'Team decision', 'Eligibility problem', 'Other'];
+    const accent = this.props.accent ?? '#F2A93B';
+    const EMPTY = { tournament: { tournament_id: '', name: '', status: 'draft', start_date: '', end_date: '', venue: '' }, me: {}, teams: [], categories: [], events: [], athletes: [], counts: {}, log: [] };
+    const d = s.d || EMPTY;
+    const T = d.tournament;
+    const role = d.me.role || (s.user ? s.user.role : '');
+    const isAdmin = role === 'admin', isMgr = role === 'team_manager', isMar = role === 'marshal';
+    const myTeam = d.me.team_id || '';
+    const roleName = isAdmin ? 'Admin' : isMgr ? 'Manager' : isMar ? 'Marshal' : '';
+
+    // ---------- lookups ----------
+    const cats = d.categories;
+    const teams = d.teams;
+    const teamBy = {}; teams.forEach((x) => { teamBy[x.team_id] = x; });
+    const catBy = {}; cats.forEach((x) => { catBy[x.category_id] = x; });
+    const myTeamName = teamBy[myTeam] ? teamBy[myTeam].name : '';
+    const tName = (id) => (teamBy[id] ? teamBy[id].name : '');
+    const catName = (id) => (catBy[id] ? catBy[id].name : 'No category');
+    const limitOf = (id) => (teamBy[id] ? teamBy[id].player_limit : 0);
+    const EV = d.events.filter((x) => x.enabled);          // events a bowler can be entered in
+    const EVL = {}; d.events.forEach((x) => { EVL[x.event_key] = x.name; });
+    const evDef = (k) => d.events.find((x) => x.event_key === k) || null;
+    const TV = EV.filter((x) => x.size >= 3);              // team events
+    const evDefaults = () => EV.reduce((o, x) => { if (x.event_key === 's' || x.event_key === 'd') o[x.event_key] = true; return o; }, {});
+
+    const ath = d.athletes.map((a) => {
+      const ev = {}, tm = {};
+      (a.events.ev || []).forEach((k) => { ev[k] = true; });
+      (a.events.team || []).forEach((k) => { tm[k] = true; });
+      return { id: a.athlete_id, pid: a.player_code, name: a.full_name, ic: a.id_number || '', dob: a.birth_date || '', catId: a.category_id, teamId: a.team_id,
+        ev, tm, partner: a.partner_athlete_id || '', active: a.status === 'registered', out: a.status === 'substituted_out', note: a.note || '', base: a.updated_at || '' };
+    });
+    const norm = (x) => String(x || '').replace(/[\s-]/g, '').toUpperCase();
+
+    // ---------- dates and phase ----------
+    const TODAY = new Date().toISOString().slice(0, 10);
+    const ms = (iso) => (iso ? Date.parse(iso + 'T00:00:00Z') : NaN);
+    const fmtD = (m) => new Date(m).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    const now = ms(TODAY);
+    const phase = T.status === 'regopen' ? 'open' : T.status === 'draft' ? 'notyet' : 'closed';
+    const stCls = (st) => 'pm-st ' + (st === 'live' ? 'pm-st--live' : st === 'paused' ? 'pm-st--warn' : st === 'ended' ? 'pm-st--end' : (st === 'draft' || st === 'regclosed') ? 'pm-st--draft' : 'pm-st--open');
+    const phaseText = { draft: 'Draft · registration has not opened', regopen: 'Open for team managers', regclosed: 'Registration closed by the Admin', live: 'Tournament is live · registration closed',
+      paused: 'Tournament is paused · registration closed', ended: 'Tournament has ended · registration closed' }[T.status] || '';
+    const phaseCls = 'pm-st ' + (phase === 'open' ? 'pm-st--open' : phase === 'notyet' ? 'pm-st--warn' : 'pm-st--live');
+    const refDate = T.start_date || TODAY;
+    const ageOn = (dob, ref) => {
+      const a = ms(dob), r = ms(ref);
+      if (isNaN(a) || isNaN(r)) return null;
+      const x = new Date(a), y = new Date(r);
+      let n = y.getUTCFullYear() - x.getUTCFullYear();
+      const m = y.getUTCMonth() - x.getUTCMonth();
+      if (m < 0 || (m === 0 && y.getUTCDate() < x.getUTCDate())) n--;
+      return n;
+    };
+
+    // ---------- permissions ----------
+    const canAdd = isAdmin || (isMgr && phase === 'open');
+    const canChangeAth = (a) => isAdmin || (isMgr && a.teamId === myTeam && phase === 'open');
+    const outsideWindow = isAdmin && phase !== 'open';
+    const afterCloseNote = outsideWindow ? (phase === 'closed' ? 'Registration is closed. As Admin you can still make this change. It is logged as after close.' : 'Registration has not opened yet. As Admin you can make this change early. It is logged.') : '';
+    const roleLine = roleName + (isMgr ? ' · ' + myTeamName : '');
+    const roleNote = isMgr ? 'You see ' + myTeamName + ' in full. Other teams show counts only, so personal details stay private.' : isMar ? 'View only. Marshals see names, categories and teams. Registration is handled by the Admin and team managers.' : '';
+    const phaseNote = isMgr && phase === 'notyet' ? 'Registration has not opened yet. You can see your team but not add bowlers yet.'
+      : isMgr && phase === 'closed' ? 'Registration is closed. Changes to your team now go through the Admin.'
+      : outsideWindow ? (phase === 'closed' ? 'Registration is closed (' + (PM.STATUS[T.status] || T.status) + '). You can still change entries as Admin, and every change is logged.' : 'Registration has not opened yet. You can pre-load athletes as Admin.') : '';
+
+    // ---------- validation (client side; the server checks everything again) ----------
+    const validate = (p, selfId, extra) => {
+      const errs = [], warns = [];
+      const list = ath.filter((a) => a.active).concat(extra || []);
+      if (!String(p.name || '').trim()) errs.push('Enter the full name.');
+      if (!String(p.ic || '').trim()) errs.push('Enter the ID or passport number.');
+      const dm = ms(p.dob);
+      if (!p.dob || isNaN(dm)) errs.push('Enter a valid date of birth.');
+      else if (dm > now) errs.push('The date of birth is in the future.');
+      if (!p.catId) errs.push('Pick a category.');
+      if (!p.teamId) errs.push('Pick a team.');
+      if (String(p.ic || '').trim()) {
+        const x = list.find((a) => a.id !== selfId && norm(a.ic) === norm(p.ic));
+        if (x) errs.push('ID ' + String(p.ic).trim() + ' is already registered' + (isAdmin || x.teamId === myTeam ? ' for ' + x.name + ' (' + tName(x.teamId) + ').' : ' by another team.'));
+      }
+      if (String(p.name || '').trim() && p.dob) {
+        const x = list.find((a) => a.id !== selfId && a.dob === p.dob && a.name.trim().toLowerCase() === String(p.name).trim().toLowerCase() && norm(a.ic) !== norm(p.ic));
+        if (x) errs.push('Same name and date of birth as an existing bowler with a different ID. Check for a typo.');
+      }
+      const cat = catBy[p.catId];
+      if (cat && p.teamId) {
+        const n = list.filter((a) => a.id !== selfId && a.catId === p.catId && a.teamId === p.teamId).length;
+        if (n >= limitOf(p.teamId)) errs.push(tName(p.teamId) + ' already has ' + n + ' of ' + limitOf(p.teamId) + ' bowlers in ' + cat.name + '. The Admin can raise the limit.');
+      }
+      const age = ageOn(p.dob, refDate);
+      const m = cat ? /U(\d+)/i.exec(cat.name) : null;
+      if (m && age !== null && age >= parseInt(m[1], 10)) warns.push(String(p.name || 'This bowler').trim() + ' is ' + age + ' on the first day. ' + cat.name + ' is for under ' + m[1] + '.');
+      const icm = /^(\d{2})(\d{2})(\d{2})-?\d{2}-?\d{4}$/.exec(String(p.ic || '').trim());
+      if (icm && p.dob && !isNaN(dm)) {
+        const want = p.dob.slice(2, 4) + p.dob.slice(5, 7) + p.dob.slice(8, 10);
+        if (icm[1] + icm[2] + icm[3] !== want) warns.push('The ID number starts with ' + icm[1] + icm[2] + icm[3] + ', which does not match the date of birth.');
+      }
+      return { errs, warns };
+    };
+
+    const evText = (a) => {
+      const k = EV.filter((x) => a.ev[x.event_key]).map((x) => x.name + (x.size >= 3 && a.tm[x.event_key] ? ' (in team)' : ''));
+      return k.length ? k.join(' · ') : 'No events';
+    };
+
+    // ---------- athletes list ----------
+    const baseAth = ath;                                  // the server already limits a manager to their own team
+    const activeAll = Object.keys(d.counts).reduce((n, t) => n + Object.keys(d.counts[t]).reduce((m, c) => m + d.counts[t][c], 0), 0);
+    const teamsIn = Object.keys(d.counts).filter((t) => Object.keys(d.counts[t]).some((c) => d.counts[t][c] > 0)).length;
+    const myN = ath.filter((a) => a.teamId === myTeam && a.active).length;
+    const wdN = ath.filter((a) => !a.active).length;
+    const limits = teams.map((x) => x.player_limit);
+    const limitTxt = !limits.length ? '–' : Math.min.apply(null, limits) === Math.max.apply(null, limits) ? String(limits[0]) : Math.min.apply(null, limits) + ' to ' + Math.max.apply(null, limits);
+    const tiles = [
+      { label: 'Registered bowlers', value: activeAll, hint: 'All teams, active' },
+      isMgr ? { label: 'Your team', value: myN, hint: myTeamName } : { label: 'Teams entered', value: teamsIn, hint: 'of ' + teams.length + ' teams' },
+      { label: 'Withdrawn', value: wdN, hint: 'Kept in the log' },
+      { label: 'Team limit', value: limitTxt, hint: 'Per category' }
+    ];
+    const qn = (s.q || '').trim().toLowerCase();
+    let filtered = baseAth.filter((a) => {
+      const st = a.active ? 'Active' : 'Withdrawn';
+      if (s.fStatus !== 'All' && st !== s.fStatus) return false;
+      if (s.fCat !== 'all' && a.catId !== s.fCat) return false;
+      if (s.fTeam !== 'all' && !isMgr && a.teamId !== s.fTeam) return false;
+      if (qn && a.name.toLowerCase().indexOf(qn) < 0 && (a.pid || '').toLowerCase().indexOf(qn) < 0 && !(!isMar && norm(qn) !== '' && norm(a.ic).toLowerCase().indexOf(norm(qn).toLowerCase()) >= 0)) return false;
+      return true;
+    });
+    const catIdx = (id) => cats.findIndex((c) => c.category_id === id);
+    filtered = filtered.slice().sort((x, y) => catIdx(x.catId) - catIdx(y.catId) || x.name.localeCompare(y.name));
+
+    const openAdd = () => this.setState({ panel: 'form', editId: '', tried: false, msg: '', errText: '', srvErr: '', tab: 'athletes',
+      form: { name: '', ic: '', dob: '', catId: s.fCat !== 'all' ? s.fCat : '', teamId: isMgr ? myTeam : '', ev: evDefaults(), tm: {}, partner: '' } });
+    const openEdit = (a) => this.setState({ panel: 'form', editId: a.id, tried: false, msg: '', errText: '', srvErr: '',
+      form: { name: a.name, ic: a.ic, dob: a.dob, catId: a.catId, teamId: a.teamId, ev: Object.assign({}, a.ev), tm: Object.assign({}, a.tm), partner: a.partner } });
+    const openWd = (a) => this.setState({ panel: 'wd', target: a.id, tried: false, msg: '', errText: '', srvErr: '', wd: { reason: '', note: '' } });
+    const openSub = (a) => this.setState({ panel: 'sub', target: a.id, tried: false, msg: '', errText: '', srvErr: '', sub: { name: '', ic: '', dob: '' }, wd: { reason: '', note: '' } });
+    const restore = (a) => this.act('participants.restore', { athlete_id: a.id }, () => '', () => this.setState({ msg: a.name + ' is registered again.' }));
+    const rows = filtered.map((a) => {
+      const partner = a.partner ? ath.find((x) => x.id === a.partner) : null;
+      const can = canChangeAth(a) && a.active;
+      const canRestore = isAdmin && !a.active && !a.out;
+      const age = ageOn(a.dob, refDate);
+      return { name: a.name, pid: a.pid || '', ic: a.ic, dob: isNaN(ms(a.dob)) ? '' : fmtD(ms(a.dob)), age: age === null ? '' : age,
+        catName: catName(a.catId), team: tName(a.teamId), evText: evText(a), hasPartner: !!partner, partnerName: partner ? partner.name : '',
+        status: a.active ? 'Active' : 'Withdrawn', stCls: 'pm-st ' + (a.active ? 'pm-st--open' : 'pm-st--draft'),
+        note: a.note, hasNote: !a.active && !!a.note, showPrivate: !isMar,
+        canChange: can, canRestore, hasActions: can || canRestore,
+        edit: () => openEdit(a), withdraw: () => openWd(a), sub: () => openSub(a), restore: () => restore(a),
+        editLabel: 'Edit ' + a.name, wdLabel: 'Withdraw ' + a.name, subLabel: 'Substitute for ' + a.name, restoreLabel: 'Restore ' + a.name };
+    });
+    const chip = (on, fn, label) => ({ label, on, cls: 'pm-chip' + (on ? ' pm-chip--on' : ''), pick: fn });
+    const catFilter = [chip(s.fCat === 'all', () => this.setState({ fCat: 'all' }), 'All')].concat(cats.map((c) => chip(s.fCat === c.category_id, () => this.setState({ fCat: c.category_id }), c.name + ' (' + baseAth.filter((a) => a.catId === c.category_id && a.active).length + ')')));
+    const teamFilter = [chip(s.fTeam === 'all', () => this.setState({ fTeam: 'all' }), 'All')].concat(teams.map((tm) => chip(s.fTeam === tm.team_id, () => this.setState({ fTeam: tm.team_id }), tm.name)));
+    const statusFilter = ['Active', 'Withdrawn', 'All'].map((v) => chip(s.fStatus === v, () => this.setState({ fStatus: v }), v));
+    const listTitle = isMgr ? myTeamName + ' athletes' : 'Athletes';
+    const countLine = 'Showing ' + filtered.length + ' of ' + baseAth.length + (isMgr ? ' (your team)' : '');
+    const emptyMsg = baseAth.length === 0 ? (cats.length === 0 ? 'The Admin has not added categories yet. Athletes are registered into categories from Tournament setup.' : (canAdd ? 'No athletes yet. Add the first one, or import a list from Excel.' : 'No athletes registered yet.')) : 'No athletes match these filters.';
+
+    // ---------- form ----------
+    const f = s.form;
+    const isEdit = !!s.editId;
+    const editing = ath.find((a) => a.id === s.editId);
+    const fCatObj = catBy[f.catId];
+    const setF = (patch) => this.setState((st) => ({ form: Object.assign({}, st.form, patch), srvErr: '' }));
+    const onF = { name: (e) => setF({ name: e.target.value }), ic: (e) => setF({ ic: e.target.value }), dob: (e) => setF({ dob: e.target.value }) };
+    const catPick = cats.map((c) => ({ label: c.name, on: f.catId === c.category_id, off: isEdit, cls: 'pm-chip' + (f.catId === c.category_id ? ' pm-chip--on' : ''), pick: () => setF({ catId: c.category_id, ev: evDefaults(), tm: {}, partner: '' }) }));
+    const teamPick = teams.filter((tm) => tm.status === 'active' || tm.team_id === f.teamId).map((tm) => ({ label: tm.name, on: f.teamId === tm.team_id, off: isMgr || (isEdit && !isAdmin), cls: 'pm-chip' + (f.teamId === tm.team_id ? ' pm-chip--on' : ''), pick: () => setF({ teamId: tm.team_id, tm: {}, partner: '' }) }));
+    const evPick = fCatObj ? EV.map((x) => { const k = x.event_key; return { label: x.name, on: !!f.ev[k], cls: 'pm-chip' + (f.ev[k] ? ' pm-chip--on' : ''),
+      toggle: () => setF({ ev: Object.assign({}, f.ev, { [k]: !f.ev[k] }), tm: f.ev[k] ? Object.assign({}, f.tm, { [k]: false }) : f.tm, partner: k === 'd' && f.ev.d ? '' : f.partner }) }; }) : [];
+    // Team events: one entry per team, category and event. The bowler is either in that team or not yet.
+    const tmRows = fCatObj && f.teamId ? TV.filter((x) => f.ev[x.event_key]).map((x) => {
+      const k = x.event_key;
+      const inTeam = ath.filter((a) => a.id !== s.editId && a.active && a.catId === f.catId && a.teamId === f.teamId && a.tm[k]);
+      const full = inTeam.length >= x.size && !f.tm[k];
+      const chips = [
+        { label: 'Not in the team yet', on: !f.tm[k], off: false, cls: 'pm-chip' + (!f.tm[k] ? ' pm-chip--on' : ''), pick: () => setF({ tm: Object.assign({}, f.tm, { [k]: false }) }) },
+        { label: 'In the team (' + (inTeam.length + (f.tm[k] ? 1 : 0)) + ' of ' + x.size + ')', on: !!f.tm[k], off: full, cls: 'pm-chip' + (f.tm[k] ? ' pm-chip--on' : ''), pick: () => { if (!full) setF({ tm: Object.assign({}, f.tm, { [k]: true }) }); } }];
+      return { label: x.name + ': ' + x.size + ' bowlers per team', chips, help: (x.baker ? 'Baker, one team score per game. ' : 'Individual scores, the team total is the sum. ') + (inTeam.length ? 'Already in the team: ' + inTeam.map((a) => a.name).join(', ') + '.' : 'Nobody is in the team yet.') + (full ? ' The team is full.' : '') };
+    }) : [];
+    const showPartner = !!(fCatObj && f.ev.d && f.teamId);
+    let partnerOpts = [];
+    if (showPartner) {
+      partnerOpts = [{ label: 'No partner yet', sub: 'Can be set later', on: !f.partner, cls: 'pm-row' + (!f.partner ? ' pm-row--on' : ''), pick: () => setF({ partner: '' }) }]
+        .concat(ath.filter((a) => a.id !== s.editId && a.active && a.catId === f.catId && a.teamId === f.teamId && a.ev.d && (!a.partner || a.partner === s.editId))
+          .map((a) => ({ label: a.name, sub: a.partner ? 'Already your partner' : 'No partner yet', on: f.partner === a.id, cls: 'pm-row' + (f.partner === a.id ? ' pm-row--on' : ''), pick: () => setF({ partner: a.id }) })));
+    }
+    const fv = s.panel === 'form' ? validate(f, s.editId) : { errs: [], warns: [] };
+    const tgt = ath.find((a) => a.id === s.target);
+    const tgtPartner = tgt && tgt.partner ? ath.find((x) => x.id === tgt.partner) : null;
+    const sv = s.panel === 'sub' && tgt ? (() => { const v = validate({ name: s.sub.name, ic: s.sub.ic, dob: s.sub.dob, catId: tgt.catId, teamId: tgt.teamId }, tgt.id); return { errs: v.errs.filter((x) => !/already has \d+ of/.test(x)).concat(!s.wd.reason ? ['Pick a reason.'] : []), warns: v.warns }; })() : { errs: [], warns: [] };
+    const cur = s.panel === 'sub' ? sv : fv;
+    const errAll = cur.errs.concat(s.srvErr ? [s.srvErr] : []);
+    const showErrs = s.tried && errAll.length > 0;
+    const evArgs = () => ({ ev: EV.filter((x) => f.ev[x.event_key]).map((x) => x.event_key), team: TV.filter((x) => f.ev[x.event_key] && f.tm[x.event_key]).map((x) => x.event_key) });
+    const saveAthlete = () => {
+      if (s.busy) return;
+      if (fv.errs.length) { this.setState({ tried: true }); return; }
+      const nm = f.name.trim();
+      const params = { team_id: f.teamId, category_id: f.catId, person: { full_name: nm, id_number: f.ic.trim(), birth_date: f.dob }, events: evArgs(), partner_athlete_id: f.ev.d ? f.partner : '' };
+      if (isEdit) { params.athlete_id = s.editId; params.base_updated_at = editing ? editing.base : undefined; }
+      this.act('participants.save', params, () => (isEdit ? nm + ' was updated.' : nm + ' is registered in ' + catName(f.catId) + ' for ' + tName(f.teamId) + '.'));
+    };
+
+    // ---------- withdraw / substitute ----------
+    const reasonPick = REASONS.map((r) => ({ label: r, on: s.wd.reason === r, cls: 'pm-chip' + (s.wd.reason === r ? ' pm-chip--on' : ''), pick: () => this.setState((st) => ({ wd: Object.assign({}, st.wd, { reason: r }), srvErr: '' })) }));
+    const confirmWd = () => {
+      if (s.busy) return;
+      if (!tgt || !s.wd.reason) { this.setState({ tried: true }); return; }
+      this.act('participants.withdraw', { athlete_id: tgt.id, reason: s.wd.reason, note: s.wd.note }, () => tgt.name + ' is withdrawn. It is in the activity log.');
+    };
+    const confirmSub = () => {
+      if (s.busy) return;
+      if (!tgt || sv.errs.length) { this.setState({ tried: true }); return; }
+      const nm = s.sub.name.trim();
+      this.act('participants.substitute', { athlete_id: tgt.id, person: { full_name: nm, id_number: s.sub.ic.trim(), birth_date: s.sub.dob }, reason: s.wd.reason, note: s.wd.note }, () => nm + ' replaces ' + tgt.name + '. It is in the activity log.');
+    };
+    const wdErr = s.panel === 'wd' ? (s.tried && !s.wd.reason ? 'Pick a reason first.' : s.srvErr) : '';
+
+    // ---------- import ----------
+    const parseDob = (v) => { const m = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/.exec(v); if (m) return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2); return v; };
+    const parsed = (() => {
+      const lines = (s.importText || '').split(/\r?\n/);
+      const out = [], accepted = [];
+      lines.forEach((line, i) => {
+        if (!line.trim()) return;
+        const delim = line.indexOf('\t') >= 0 ? '\t' : ',';
+        const c = line.split(delim).map((x) => x.trim());
+        if (/^name$/i.test(c[0])) return;
+        const cat = cats.find((k) => k.name.toLowerCase() === (c[3] || '').toLowerCase());
+        const teamRaw = c[4] || (isMgr ? myTeamName : '');
+        const team = teams.find((x) => x.name.toLowerCase() === teamRaw.toLowerCase() || x.code.toLowerCase() === teamRaw.toLowerCase());
+        const dob = parseDob(c[2] || '');
+        let evList = null, evErr = '';
+        if (c[5]) {
+          evList = [];
+          c[5].split(/[;|\/]/).map((x) => x.trim().toLowerCase()).filter(Boolean).forEach((tok) => {
+            const x = EV.find((e) => e.name.toLowerCase().indexOf(tok.slice(0, 4)) === 0 || e.name.toLowerCase().indexOf(tok) === 0);
+            if (x) { if (evList.indexOf(x.event_key) < 0) evList.push(x.event_key); } else evErr = 'Unknown or unavailable event "' + tok + '".';
+          });
+        }
+        let msg = '', bad = false, warn = false;
+        if (!cat) { bad = true; msg = c[3] ? 'No category called "' + c[3] + '" in this tournament.' : 'Category is missing.'; }
+        else if (!team) { bad = true; msg = teamRaw ? 'Unknown team "' + teamRaw + '".' : 'Team is missing.'; }
+        else if (isMgr && team.team_id !== myTeam) { bad = true; msg = 'This is not your team. Managers can import ' + myTeamName + ' only.'; }
+        else if (evErr) { bad = true; msg = evErr; }
+        else {
+          const v = validate({ name: c[0] || '', ic: c[1] || '', dob, catId: cat.category_id, teamId: team.team_id }, '', accepted);
+          if (v.errs.length) { bad = true; msg = v.errs[0]; }
+          else if (v.warns.length) { warn = true; msg = v.warns[0]; }
+        }
+        if (!bad) accepted.push({ id: 'imp' + accepted.length, name: c[0], ic: c[1], dob, catId: cat.category_id, teamId: team.team_id, ev: {}, tm: {}, partner: '', active: true, line: i, events: evList });
+        out.push({ line: i + 1, name: c[0] || '(no name)', detail: [c[1], cat ? cat.name : c[3], team ? team.name : c[4]].filter(Boolean).join(' · '),
+          label: bad ? 'Skipped' : warn ? 'Ready, check' : 'Ready', cls: 'pm-st ' + (bad ? 'pm-st--live' : warn ? 'pm-st--warn' : 'pm-st--open'),
+          msg, hasMsg: !!msg, msgColor: bad ? '#B42318' : '#6B4400', bad, raw: i });
+      });
+      return { rows: out, accepted, lines };
+    })();
+    const readyN = parsed.accepted.length, badN = parsed.rows.length - readyN;
+    const importOff = !canAdd || cats.length === 0;
+    const doImport = () => {
+      if (s.busy || !parsed.accepted.length) return;
+      const sent = parsed.accepted;
+      const payload = sent.map((a) => { const o = { name: a.name, id: a.ic, dob: a.dob, category_id: a.catId, team_id: a.teamId }; if (a.events) o.events = a.events; return o; });
+      this.act('participants.import', { rows: payload }, () => '', (r) => {
+        const failed = {}; let svErr = 0;
+        r.results.forEach((x, i) => { if (x.status === 'error') { failed[sent[i].line] = true; svErr++; } });
+        const skippedLines = {}; parsed.rows.forEach((x) => { if (x.bad) skippedLines[x.raw] = true; });
+        const keep = parsed.lines.filter((l, i) => l.trim() && (failed[i] || skippedLines[i]) && !/^name$/i.test(l.split(/[\t,]/)[0].trim()));
+        const first = r.results.find((x) => x.status === 'error');
+        this.setState({ importText: keep.join('\n'), tab: keep.length ? 'import' : 'athletes', panel: 'none',
+          msg: 'Imported ' + r.created + ' bowlers' + (keep.length ? ' and left ' + keep.length + ' with problems here to fix.' : '.'),
+          errText: first ? 'Row not saved: ' + first.error : '' });
+      });
+    };
+    const loadExample = () => {
+      if (!cats.length || !teams.length) return;
+      const c0 = cats[0].name, c1 = (cats[1] || cats[0]).name;
+      const mine = isMgr ? myTeamName : teams[0].name;
+      this.setState({ importText: ['name,id,date of birth,category,team,events',
+        'Imran Shah,150611-10-5099,2015-06-11,' + c0 + ',' + mine + ',singles;doubles',
+        'Lee Jia Hui,160309-14-5204,09/03/2016,' + c1 + ',' + mine + ',',
+        'Hana Zulkifli,150101-10-5010,2015-01-01,No Such Category,' + mine + ',',
+        'Tan Wei Ming,140215-10-5612,2014-02-15,' + c0 + ',' + mine + ',singles'].join('\n') });
+    };
+
+    // ---------- overview ----------
+    const ovCards = teams.map((tm) => {
+      const cc = d.counts[tm.team_id] || {};
+      const total = Object.keys(cc).reduce((n, c) => n + cc[c], 0);
+      const mine = isMgr && tm.team_id === myTeam;
+      return { team: tm.name, total, mine,
+        boxStyle: 'background:#fff;border:' + (mine ? '2px solid #0E1A2B' : '1px solid #D5DBE4') + ';border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px',
+        cats: cats.map((c) => { const n = cc[c.category_id] || 0; const lim = tm.player_limit || 1; const full = n >= lim;
+          return { name: c.name, count: n, limit: tm.player_limit, fullTxt: full ? ' · full' : '', barStyle: 'height:100%;width:' + Math.min(100, Math.round(n / lim * 100)) + '%;background:' + (full ? '#B42318' : 'var(--accent)') }; }) };
+    });
+
+    // ---------- log ----------
+    const TAG = { athlete_add: 'Added', athlete_edit: 'Edited', athlete_import: 'Import', athlete_withdraw: 'Withdrawal', athlete_substitute: 'Substitution', athlete_restore: 'Restored' };
+    const logRows = d.log.map((l) => ({ at: PM.fmtTime(l.at), who: l.who, text: l.text, tag: l.phase === 'closed' ? 'After close' : (l.phase === 'early' && l.action === 'athlete_add' ? 'Early' : (TAG[l.action] || l.action)), tagCls: 'pm-tag' }));
+
+    // ---------- tabs ----------
+    const tabDefs = [{ id: 'athletes', label: 'Athletes', count: baseAth.filter((a) => a.active).length }, { id: 'import', label: 'Bulk import', hide: !(isAdmin || isMgr) }, { id: 'teams', label: 'Teams overview' }, { id: 'log', label: 'Activity log', hide: isMar }].filter((x) => !x.hide);
+    const tab = tabDefs.some((x) => x.id === s.tab) ? s.tab : 'athletes';
+    const tabs = tabDefs.map((x) => ({ label: x.label, count: x.count === undefined ? '' : x.count, hasCount: x.count !== undefined, cls: 'pm-tab' + (tab === x.id ? ' pm-tab--on' : ''), cur: tab === x.id ? 'page' : 'false', go: () => this.setState({ tab: x.id, panel: 'none', msg: '', errText: '' }) }));
+
+    const catSummary = cats.map((c) => { const n = baseAth.filter((a) => a.catId === c.category_id && a.active).length; return { name: c.name, text: n + (n === 1 ? ' bowler' : ' bowlers') + ' registered' + (isMgr ? ' in your team.' : ' across all teams.') }; });
+    const showForm = s.panel === 'form' && tab === 'athletes', showWd = s.panel === 'wd' && !!tgt, showSub = s.panel === 'sub' && !!tgt;
+    const evNames = EV.map((x) => x.name + (x.size >= 3 ? ' (' + x.size + ')' : '')).join(', ');
+
+    return {
+      accent, t: { status: PM.STATUS[T.status] || T.status }, title: T.name || 'Untitled tournament',
+      venueLine: [T.venue, PM.fmtDates(T.start_date, T.end_date)].filter(Boolean).join(' · '),
+      gate: s.gate, gateRetry: s.gateRetry, reload: () => this.load(s.tid), loggedIn: !s.gate && !!s.d,
+      signOut: () => this.signOut(), isAdminUser: isAdmin, dashHref: PM.link('tournament.html', s.tid),
+      initials: s.user ? String(s.user.display_name || s.user.login_id || '?').slice(0, 2).toUpperCase() : '',
+      stCls: stCls(T.status), phaseCls, phaseText, signedAs: 'Signed in as ' + roleLine, roleNote, phaseNote, msg: s.msg, clearMsg: () => this.setState({ msg: '' }),
+      errText: s.errText, clearErr: () => this.setState({ errText: '' }), busy: s.busy,
+      canAdd, openAdd, goImport: () => this.setState({ tab: 'import', panel: 'none', msg: '', errText: '' }), tabs,
+      isAthletes: tab === 'athletes', isImport: tab === 'import', isTeams: tab === 'teams', isLog: tab === 'log',
+      tiles, listTitle, q: s.q, onQ: (e) => this.setState({ q: e.target.value }), searchExtra: isMar ? '' : ' or ID', catFilter, teamFilter, statusFilter, showTeamFilter: !isMgr, countLine,
+      rows, noRows: rows.length === 0, emptyMsg,
+      tblCls: 'pm-tbl' + (isMar ? ' pm-tbl--off' : ''), cardsCls: 'pm-cards' + (isMar ? ' pm-cards--on' : ''),
+      showSummary: !showForm && !showWd && !showSub, limitTxt, limitNote: 'Set by the Admin in Tournament setup. Adding a bowler over the limit is blocked for everyone.',
+      eventsLine: evNames ? 'Open for entry: ' + evNames + '.' : 'No events are switched on yet.', catSummary, noCats: cats.length === 0,
+      showForm, formTitle: isEdit ? 'Edit athlete' : 'Add athlete', form: f, onF, isEdit, catPick, teamPick, hasFormCat: !!fCatObj, evPick,
+      allEventsText: 'Singles and Doubles are on by default. Masters needs no sign-up.',
+      showPartner, partnerOpts, tmRows, hasWarns: cur.warns.length > 0, warnList: cur.warns.map((w) => ({ text: w })), showErrs, errList: errAll.map((w) => ({ text: w })),
+      closePanel: () => this.setState({ panel: 'none', tried: false, srvErr: '' }), saveAthlete, saveLabel: s.busy ? 'Saving…' : (isEdit ? 'Save changes' : 'Register athlete'),
+      showWd, showSub, targetName: tgt ? tgt.name : '', targetLine: tgt ? catName(tgt.catId) + ' · ' + tName(tgt.teamId) + ' · ' + evText(tgt) : '',
+      targetHasPartner: !!tgtPartner, targetPartnerNote: tgtPartner ? tgtPartner.name + ' is the Doubles partner and will need a new partner.' : '', reasonPick, afterCloseNote,
+      wd: s.wd, wdErr, onWd: { note: (e) => this.setState((st) => ({ wd: Object.assign({}, st.wd, { note: e.target.value }) })) },
+      sub: s.sub, onSub: { name: (e) => this.setState((st) => ({ sub: Object.assign({}, st.sub, { name: e.target.value }), srvErr: '' })), ic: (e) => this.setState((st) => ({ sub: Object.assign({}, st.sub, { ic: e.target.value }), srvErr: '' })), dob: (e) => this.setState((st) => ({ sub: Object.assign({}, st.sub, { dob: e.target.value }), srvErr: '' })) },
+      confirmWd, confirmSub, wdLabel: s.busy ? 'Saving…' : 'Withdraw bowler', subLabel: s.busy ? 'Saving…' : 'Make substitution',
+      importText: s.importText, onImportText: (e) => this.setState({ importText: e.target.value }), importOff, loadExample, clearImport: () => this.setState({ importText: '' }),
+      importRows: parsed.rows, noImportRows: parsed.rows.length === 0,
+      importEmptyMsg: cats.length === 0 ? 'Add categories in Tournament setup first. Imports match rows to categories by name.' : (canAdd ? 'Paste rows on the left, or load the example rows to see how checking works.' : 'Importing is closed for your role right now.'),
+      readyTxt: readyN + ' ready', badTxt: badN + ' with problems', readyN, badN, importGoOff: !canAdd || readyN === 0 || s.busy, doImport, importLabel: s.busy ? 'Importing…' : (readyN === 0 ? 'Import rows' : 'Import ' + readyN + (readyN === 1 ? ' ready row' : ' ready rows')),
+      ovCards, teamsNote: isMgr ? 'Other teams show how many bowlers they have entered, nothing more. Your own team is outlined.' : isMar ? 'Entries per team and category.' : 'Entries per team and category against each team’s limit.',
+      logRows, noLog: logRows.length === 0, logNote: isMgr ? 'Changes to ' + myTeamName + ' entries. Every add, edit, withdrawal and substitution is recorded with who and when.' : 'Every add, edit, import, withdrawal and substitution is recorded with who and when. Changes after registration closes are tagged.'
+    };
+  }
+}
+</script>
+</body>
+</html>
