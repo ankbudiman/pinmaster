@@ -537,6 +537,49 @@ h1,h2,h3,p{margin:0}
       </div>
     </sc-if>
 
+    <!-- PAIRING -->
+    <sc-if value="{{isPairing}}" hint-placeholder-val="{{ false }}">
+      <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+        <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Pairing</h2>
+        <p style="font-size: 15px; color: #44546A; line-height: 1.45">Choose a team and category, set every Doubles partner and team group below, then press one Save at the bottom.</p>
+        <sc-if value="{{showPTeam}}" hint-placeholder-val="{{ true }}">
+          <div><p class="pm-lbl">Team</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="Team">
+              <sc-for list="{{pTeamChips}}" as="c" hint-placeholder-count="3"><button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">{{c.label}}</button></sc-for>
+            </div></div>
+        </sc-if>
+        <div><p class="pm-lbl">Category</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="Category">
+            <sc-for list="{{pCatChips}}" as="c" hint-placeholder-count="2"><button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">{{c.label}}</button></sc-for>
+          </div></div>
+        <sc-if value="{{pNoRows}}"><p style="padding: 20px 16px; text-align: center; border: 1px dashed #7C8AA0; border-radius: 10px; font-size: 15px; color: #44546A">No bowlers registered in this team and category yet.</p></sc-if>
+        <sc-if value="{{pHasRows}}" hint-placeholder-val="{{ false }}">
+          <p style="font-size: 14px; font-weight: 600; color: #33445C">{{pSummary}}</p>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <sc-for list="{{pRows}}" as="r" hint-placeholder-count="5">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 12px; border: 1px solid #D5DBE4; border-radius: 10px">
+                <div style="flex: 1 1 180px; min-width: 0"><strong style="font-size: 15px">{{r.name}}</strong><span style="display: block; font-size: 12px; color: #44546A">{{r.pid}}</span></div>
+                <sc-if value="{{r.hasD}}">
+                  <div style="flex: 1 1 200px; min-width: 0">
+                    <label class="pm-lbl">Doubles partner</label>
+                    <select class="pm-in" value="{{r.partner}}" onChange="{{r.onPartner}}" disabled="{{r.off}}">
+                      <sc-for list="{{r.opts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for>
+                    </select>
+                  </div>
+                </sc-if>
+                <sc-for list="{{r.tchips}}" as="c" hint-placeholder-count="1"><button class="{{c.cls}}" onClick="{{c.pick}}" disabled="{{r.off}}" aria-pressed="{{c.on}}">{{c.label}}</button></sc-for>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{pErr}}"><p style="padding: 10px 12px; border-radius: 8px; background: #FDECEA; border: 1px solid #E5887E; color: #6B130B; font-size: 14px">{{pErr}}</p></sc-if>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between">
+            <button class="pm-btn" onClick="{{pReset}}" disabled="{{pSaveOff}}">Undo changes</button>
+            <button class="pm-btn pm-btn--pri" onClick="{{pSave}}" disabled="{{pSaveOff}}">{{pSaveLabel}}</button>
+          </div>
+        </sc-if>
+      </section>
+    </sc-if>
+
     <!-- TEAMS OVERVIEW -->
     <sc-if value="{{isTeams}}" hint-placeholder-val="{{ false }}">
       <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 6px">
@@ -634,7 +677,7 @@ class Component extends DCLogic {
     super(props);
     this.state = { gate: 'Loading…', gateRetry: false, user: null, tid: '', d: null, tab: 'athletes', panel: 'none', editId: '', target: '', tried: false,
       msg: '', errText: '', srvErr: '', busy: false, form: this.blankForm(), wd: { reason: '', note: '' }, sub: { name: '', ic: '', dob: '' },
-      q: '', fCat: 'all', fTeam: 'all', fStatus: 'Active', importText: '', tick: 0, winMin: 60, winNote: '' };
+      q: '', fCat: 'all', fTeam: 'all', fStatus: 'Active', importText: '', tick: 0, winMin: 60, winNote: '', pTeam: '', pCat: '', pDraft: null, pErr: '' };
     this.skew = 0;
   }
   blankForm() { return { name: '', ic: '', dob: '', catId: '', teamId: '', ev: {}, tm: {}, partner: '' }; }
@@ -987,6 +1030,40 @@ class Component extends DCLogic {
         'Tan Wei Ming,140215-10-5612,2014-02-15,' + c0 + ',' + mine + ',singles'].join('\n') });
     };
 
+    // ---------- Pairing tab ----------
+    const pTeamId = isMgr ? myTeam : (s.pTeam || (teams[0] ? teams[0].team_id : ''));
+    const pCatId = s.pCat || (cats[0] ? cats[0].category_id : '');
+    const pGrp = ath.filter((a) => a.active && a.teamId === pTeamId && a.catId === pCatId);
+    const pd = s.pDraft || { partners: {}, members: {} };
+    const pPartner = (a) => (pd.partners[a.id] !== undefined ? pd.partners[a.id] : a.partner);
+    const pMembers = (k) => (pd.members[k] || pGrp.filter((a) => a.tm[k]).map((a) => a.id));
+    const pDirty = Object.keys(pd.partners).length + Object.keys(pd.members).length > 0;
+    const pSet = (fn) => { const n = { partners: Object.assign({}, pd.partners), members: Object.assign({}, pd.members) }; fn(n); this.setState({ pDraft: n, pErr: '' }); };
+    const setPartnerD = (id, pid) => pSet((n) => {
+      const get = (x) => { const a = pGrp.find((y) => y.id === x); return n.partners[x] !== undefined ? n.partners[x] : (a ? a.partner : ''); };
+      const old = get(id); if (old && old !== pid) n.partners[old] = '';
+      if (pid) { const o2 = get(pid); if (o2 && o2 !== id) n.partners[o2] = ''; n.partners[pid] = id; }
+      n.partners[id] = pid || '';
+    });
+    const togT = (id, k, size, name) => {
+      const cur = pMembers(k), on = cur.indexOf(id) >= 0;
+      if (!on && cur.length >= size) { this.setState({ pErr: name + ' takes ' + size + ' bowlers at most. Take one out first.' }); return; }
+      pSet((n) => { n.members[k] = on ? cur.filter((x) => x !== id) : cur.concat([id]); });
+    };
+    const pRows = pGrp.map((a) => {
+      const hasD = !!a.ev.d, cur = pPartner(a);
+      const opts = [{ v: '', label: 'No partner' }].concat(pGrp.filter((x) => x.id !== a.id && x.ev.d).map((x) => ({ v: x.id, label: x.name + ' (' + x.pid + ')' })));
+      return { name: a.name, pid: a.pid + ' · age ' + (ageOn(a.dob, TODAY) === null ? '' : ageOn(a.dob, TODAY)), hasD, partner: cur, opts, off: !canChangeAth(a),
+        onPartner: (e) => setPartnerD(a.id, e.target.value),
+        tchips: TV.filter((x) => a.ev[x.event_key]).map((x) => { const on = pMembers(x.event_key).indexOf(a.id) >= 0;
+          return { label: x.name + (on ? ': in team' : ': not in team'), on, cls: 'pm-chip' + (on ? ' pm-chip--on' : ''), pick: () => togT(a.id, x.event_key, x.size, x.name) }; }) };
+    });
+    const pPairs = pGrp.filter((a) => a.ev.d && pPartner(a)).length / 2, pSingle = pGrp.filter((a) => a.ev.d && !pPartner(a)).length;
+    const pSummary = (EV.some((x) => x.event_key === 'd') ? 'Doubles: ' + pPairs + ' pair' + (pPairs === 1 ? '' : 's') + (pSingle ? ', ' + pSingle + ' without a partner' : '') + '. ' : '') + TV.map((x) => x.name + ': ' + pMembers(x.event_key).length + ' of ' + x.size + '. ').join('');
+    const pTeamChips = teams.map((tm) => chip(pTeamId === tm.team_id, () => this.setState({ pTeam: tm.team_id, pDraft: null, pErr: '' }), tm.name));
+    const pCatChips = cats.map((c) => chip(pCatId === c.category_id, () => this.setState({ pCat: c.category_id, pDraft: null, pErr: '' }), c.name));
+    const pSave = () => this.act('participants.pairing', { team_id: pTeamId, category_id: pCatId, partners: pd.partners, members: pd.members }, () => '', (r) => this.setState({ pDraft: null, pErr: '', msg: 'Pairing saved' + (r.changed ? ' (' + r.changed + ' bowlers updated).' : ' (nothing had changed).') }));
+
     // ---------- Admin: open, extend and close changes windows ----------
     const canWin = isAdmin && ['regclosed', 'live', 'paused'].indexOf(T.status) >= 0;
     const MINS = [[15, '15 minutes'], [60, '1 hour'], [240, '4 hours']];
@@ -1020,11 +1097,11 @@ class Component extends DCLogic {
     });
 
     // ---------- log ----------
-    const TAG = { athlete_add: 'Added', athlete_edit: 'Edited', athlete_import: 'Import', athlete_withdraw: 'Withdrawal', athlete_substitute: 'Substitution', athlete_restore: 'Restored', amend_open: 'Window opened', amend_extend: 'Window extended', amend_close: 'Window closed' };
+    const TAG = { athlete_add: 'Added', athlete_edit: 'Edited', athlete_import: 'Import', athlete_withdraw: 'Withdrawal', athlete_substitute: 'Substitution', athlete_restore: 'Restored', athlete_pairing: 'Pairing', amend_open: 'Window opened', amend_extend: 'Window extended', amend_close: 'Window closed' };
     const logRows = d.log.map((l) => ({ at: PM.fmtTime(l.at), who: l.who, text: l.text, tag: l.action.indexOf('amend_') === 0 ? TAG[l.action] : l.phase === 'amend' ? 'Amendment' : l.phase === 'closed' ? 'After close' : (l.phase === 'early' && l.action === 'athlete_add' ? 'Early' : (TAG[l.action] || l.action)), tagCls: 'pm-tag' }));
 
     // ---------- tabs ----------
-    const tabDefs = [{ id: 'athletes', label: 'Athletes', count: baseAth.filter((a) => a.active).length }, { id: 'import', label: 'Bulk import', hide: !(isAdmin || isMgr) }, { id: 'teams', label: 'Teams overview' }, { id: 'log', label: 'Activity log', hide: isMar }].filter((x) => !x.hide);
+    const tabDefs = [{ id: 'athletes', label: 'Athletes', count: baseAth.filter((a) => a.active).length }, { id: 'import', label: 'Bulk import', hide: !(isAdmin || isMgr) }, { id: 'pairing', label: 'Pairing', hide: !(isAdmin || isMgr) }, { id: 'teams', label: 'Teams overview' }, { id: 'log', label: 'Activity log', hide: isMar }].filter((x) => !x.hide);
     const tab = tabDefs.some((x) => x.id === s.tab) ? s.tab : 'athletes';
     const tabs = tabDefs.map((x) => ({ label: x.label, count: x.count === undefined ? '' : x.count, hasCount: x.count !== undefined, cls: 'pm-tab' + (tab === x.id ? ' pm-tab--on' : ''), cur: tab === x.id ? 'page' : 'false', go: () => this.setState({ tab: x.id, panel: 'none', msg: '', errText: '' }) }));
 
@@ -1041,7 +1118,7 @@ class Component extends DCLogic {
       stCls: stCls(T.status), phaseCls, phaseText, signedAs: 'Signed in as ' + roleLine, roleNote, phaseNote, msg: s.msg, clearMsg: () => this.setState({ msg: '' }),
       errText: s.errText, clearErr: () => this.setState({ errText: '' }), busy: s.busy,
       canAdd, openAdd, goImport: () => this.setState({ tab: 'import', panel: 'none', msg: '', errText: '' }), tabs,
-      isAthletes: tab === 'athletes', isImport: tab === 'import', isTeams: tab === 'teams', isLog: tab === 'log',
+      isAthletes: tab === 'athletes', isImport: tab === 'import', isTeams: tab === 'teams', isPairing: tab === 'pairing', showPTeam: !isMgr, pTeamChips, pCatChips, pRows, pHasRows: pRows.length > 0, pNoRows: pRows.length === 0, pSummary, pErr: s.pErr, pSaveOff: s.busy || !pDirty, pSaveLabel: s.busy ? 'Saving...' : 'Save pairing', pSave, pReset: () => this.setState({ pDraft: null, pErr: '' }), isLog: tab === 'log',
       tiles, listTitle, q: s.q, onQ: (e) => this.setState({ q: e.target.value }), searchExtra: isMar ? '' : ' or ID', catFilter, teamFilter, statusFilter, showTeamFilter: !isMgr, countLine,
       rows, noRows: rows.length === 0, emptyMsg,
       tblCls: 'pm-tbl' + (isMar ? ' pm-tbl--off' : ''), cardsCls: 'pm-cards' + (isMar ? ' pm-cards--on' : ''),
