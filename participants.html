@@ -543,6 +543,44 @@ h1,h2,h3,p{margin:0}
         <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Teams overview</h2>
         <p style="font-size: 15px; color: #44546A; line-height: 1.45">{{teamsNote}}</p>
       </section>
+      <sc-if value="{{showWin}}" hint-placeholder-val="{{ false }}">
+        <section style="background: #fff; border: 2px solid #0E1A2B; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Changes windows</h2>
+          <p style="font-size: 15px; color: #44546A; line-height: 1.45">{{winHelp}}</p>
+          <sc-if value="{{canWin}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end">
+              <div>
+                <p class="pm-lbl">How long</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px" role="group" aria-label="How long the window stays open">
+                  <sc-for list="{{minChips}}" as="c" hint-placeholder-count="3">
+                    <button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">{{c.label}}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="flex: 1 1 240px; min-width: 0">
+                <label class="pm-lbl" for="win-note">Reason (optional, shown in the log)</label>
+                <input class="pm-in" id="win-note" type="text" value="{{winNote}}" onInput="{{onWinNote}}" placeholder="For example: pairing change" autocomplete="off">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px">
+              <sc-for list="{{winCards}}" as="w" hint-placeholder-count="4">
+                <div style="border: 1px solid #C3CBD8; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px">
+                    <strong style="font-size: 16px">{{w.name}}</strong>
+                    <span class="{{w.stCls}}">{{w.status}}</span>
+                  </div>
+                  <sc-if value="{{w.hasNote}}"><span style="font-size: 13px; color: #44546A">{{w.noteTxt}}</span></sc-if>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px">
+                    <button class="pm-sm" onClick="{{w.doOpen}}" aria-label="{{w.openAria}}" disabled="{{busy}}">{{w.openLabel}}</button>
+                    <sc-if value="{{w.open}}"><button class="pm-sm" onClick="{{w.doExtend}}" aria-label="{{w.extAria}}" disabled="{{busy}}">Add 30 min</button></sc-if>
+                    <sc-if value="{{w.open}}"><button class="pm-sm pm-sm--dng" onClick="{{w.doClose}}" aria-label="{{w.closeAria}}" disabled="{{busy}}">Close now</button></sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </section>
+      </sc-if>
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; align-items: start">
         <sc-for list="{{ovCards}}" as="o" hint-placeholder-count="5">
           <section style="{{o.boxStyle}}">
@@ -596,7 +634,8 @@ class Component extends DCLogic {
     super(props);
     this.state = { gate: 'Loading…', gateRetry: false, user: null, tid: '', d: null, tab: 'athletes', panel: 'none', editId: '', target: '', tried: false,
       msg: '', errText: '', srvErr: '', busy: false, form: this.blankForm(), wd: { reason: '', note: '' }, sub: { name: '', ic: '', dob: '' },
-      q: '', fCat: 'all', fTeam: 'all', fStatus: 'Active', importText: '' };
+      q: '', fCat: 'all', fTeam: 'all', fStatus: 'Active', importText: '', tick: 0, winMin: 60, winNote: '' };
+    this.skew = 0;
   }
   blankForm() { return { name: '', ic: '', dob: '', catId: '', teamId: '', ev: {}, tm: {}, partner: '' }; }
 
@@ -610,7 +649,10 @@ class Component extends DCLogic {
     if (admin) PM.pref('tid', tid);
     this.setState({ user, tid });
     this.load(tid);
+    this.timer = setInterval(() => this.setState({ tick: Date.now() }), 15000);
   }
+  // The phone clock can be wrong: remember how far it is from the server so countdowns use server time.
+  adopt(d) { if (d && d.amend && d.amend.now) this.skew = Date.parse(d.amend.now) - Date.now(); }
   authFail(e) {
     if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return true; }
     return false;
@@ -620,6 +662,7 @@ class Component extends DCLogic {
     try {
       const d = await PM.api('participants.load', { tournament_id: tid || this.state.tid });
       document.title = (d.tournament.name || 'Tournament') + ' · Participants';
+      this.adopt(d);
       this.setState({ d, gate: '' });
     } catch (e) {
       if (this.authFail(e)) return;
@@ -633,6 +676,7 @@ class Component extends DCLogic {
     this.setState({ busy: true, srvErr: '', errText: '' });
     try {
       const r = await PM.api(action, Object.assign({ tournament_id: this.state.tid }, params));
+      this.adopt(r);
       this.setState({ d: r, busy: false });
       if (onDone) onDone(r); else this.setState({ panel: 'none', tried: false, msg: okMsg(r) });
     } catch (e) {
@@ -647,7 +691,7 @@ class Component extends DCLogic {
     const s = this.state;
     const REASONS = ['Injury', 'Illness', 'Team decision', 'Eligibility problem', 'Other'];
     const accent = this.props.accent ?? '#F2A93B';
-    const EMPTY = { tournament: { tournament_id: '', name: '', status: 'draft', start_date: '', end_date: '', venue: '' }, me: {}, teams: [], categories: [], events: [], athletes: [], counts: {}, log: [] };
+    const EMPTY = { tournament: { tournament_id: '', name: '', status: 'draft', start_date: '', end_date: '', venue: '' }, me: {}, teams: [], categories: [], events: [], athletes: [], counts: {}, log: [], amend: { now: '', windows: [], locked: false } };
     const d = s.d || EMPTY;
     const T = d.tournament;
     const role = d.me.role || (s.user ? s.user.role : '');
@@ -675,7 +719,7 @@ class Component extends DCLogic {
       (a.events.ev || []).forEach((k) => { ev[k] = true; });
       (a.events.team || []).forEach((k) => { tm[k] = true; });
       return { id: a.athlete_id, pid: a.player_code, name: a.full_name, ic: a.id_number || '', dob: a.birth_date || '', catId: a.category_id, teamId: a.team_id,
-        ev, tm, partner: a.partner_athlete_id || '', active: a.status === 'registered', out: a.status === 'substituted_out', note: a.note || '', base: a.updated_at || '' };
+        ev, tm, partner: a.partner_athlete_id || '', active: a.status === 'registered', out: a.status === 'substituted_out', note: a.note || '', base: a.updated_at || '', lock: a.lock || '' };
     });
     const norm = (x) => String(x || '').replace(/[\s-]/g, '').toUpperCase();
 
@@ -700,14 +744,24 @@ class Component extends DCLogic {
       return n;
     };
 
+    // ---------- changes windows (the Admin lets a team change entries for a while) ----------
+    const am = d.amend || { windows: [] };
+    const nowMs = Date.now() + (this.skew || 0);
+    const wins = (am.windows || []).filter((w) => Date.parse(w.until) > nowMs);
+    const myWin = isMgr ? wins.filter((w) => w.team_id === '*' || w.team_id === myTeam).sort((a, b) => Date.parse(b.until) - Date.parse(a.until))[0] : null;
+    const winOpen = !!myWin && phase === 'closed';
+    const clock = (iso) => new Date(iso).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kuala_Lumpur' });
+    const left = (iso) => { const m = Math.max(1, Math.ceil((Date.parse(iso) - nowMs) / 60000)); return m >= 120 ? Math.round(m / 60) + ' hours' : m + (m === 1 ? ' minute' : ' minutes'); };
+
     // ---------- permissions ----------
     const canAdd = isAdmin || (isMgr && phase === 'open');
-    const canChangeAth = (a) => isAdmin || (isMgr && a.teamId === myTeam && phase === 'open');
+    const canChangeAth = (a) => isAdmin || (isMgr && a.teamId === myTeam && (phase === 'open' || winOpen) && a.lock !== 'scored');
     const outsideWindow = isAdmin && phase !== 'open';
     const afterCloseNote = outsideWindow ? (phase === 'closed' ? 'Registration is closed. As Admin you can still make this change. It is logged as after close.' : 'Registration has not opened yet. As Admin you can make this change early. It is logged.') : '';
     const roleLine = roleName + (isMgr ? ' · ' + myTeamName : '');
     const roleNote = isMgr ? 'You see ' + myTeamName + ' in full. Other teams show counts only, so personal details stay private.' : isMar ? 'View only. Marshals see names, categories and teams. Registration is handled by the Admin and team managers.' : '';
-    const phaseNote = isMgr && phase === 'notyet' ? 'Registration has not opened yet. You can see your team but not add bowlers yet.'
+    const phaseNote = winOpen ? 'Changes are open for ' + (myWin.team_id === '*' ? 'all teams' : myTeamName) + ' until ' + clock(myWin.until) + ' (' + left(myWin.until) + ' left). You can change Doubles partners, team entries, substitutions and withdrawals. New bowlers cannot be added, and a bowler who has already bowled can only be changed by the Admin. The Admin checks the lane draw after your changes.'
+      : isMgr && phase === 'notyet' ? 'Registration has not opened yet. You can see your team but not add bowlers yet.'
       : isMgr && phase === 'closed' ? 'Registration is closed. Changes to your team now go through the Admin.'
       : outsideWindow ? (phase === 'closed' ? 'Registration is closed (' + (PM.STATUS[T.status] || T.status) + '). You can still change entries as Admin, and every change is logged.' : 'Registration has not opened yet. You can pre-load athletes as Admin.') : '';
 
@@ -792,7 +846,8 @@ class Component extends DCLogic {
       return { name: a.name, pid: a.pid || '', ic: a.ic, dob: isNaN(ms(a.dob)) ? '' : fmtD(ms(a.dob)), age: age === null ? '' : age,
         catName: catName(a.catId), team: tName(a.teamId), evText: evText(a), hasPartner: !!partner, partnerName: partner ? partner.name : '',
         status: a.active ? 'Active' : 'Withdrawn', stCls: 'pm-st ' + (a.active ? 'pm-st--open' : 'pm-st--draft'),
-        note: a.note, hasNote: !a.active && !!a.note, showPrivate: !isMar,
+        note: a.note || (a.active && !isMar ? (a.lock === 'scored' ? 'Has bowled. Only the Admin can change this bowler.' : a.lock === 'drawn' ? 'On the lane draw. A change is flagged for the Admin.' : '') : ''),
+        hasNote: (!a.active && !!a.note) || (a.active && !isMar && !!a.lock), showPrivate: !isMar,
         canChange: can, canRestore, hasActions: can || canRestore,
         edit: () => openEdit(a), withdraw: () => openWd(a), sub: () => openSub(a), restore: () => restore(a),
         editLabel: 'Edit ' + a.name, wdLabel: 'Withdraw ' + a.name, subLabel: 'Substitute for ' + a.name, restoreLabel: 'Restore ' + a.name };
@@ -932,6 +987,27 @@ class Component extends DCLogic {
         'Tan Wei Ming,140215-10-5612,2014-02-15,' + c0 + ',' + mine + ',singles'].join('\n') });
     };
 
+    // ---------- Admin: open, extend and close changes windows ----------
+    const canWin = isAdmin && ['regclosed', 'live', 'paused'].indexOf(T.status) >= 0;
+    const MINS = [[15, '15 minutes'], [60, '1 hour'], [240, '4 hours']];
+    const durText = (MINS.find((x) => x[0] === s.winMin) || MINS[1])[1];
+    const minChips = MINS.map((x) => ({ label: x[1], on: s.winMin === x[0], cls: 'pm-chip' + (s.winMin === x[0] ? ' pm-chip--on' : ''), pick: () => this.setState({ winMin: x[0] }) }));
+    const winTargets = [{ id: '*', name: 'All teams' }].concat(teams.filter((x) => x.status === 'active').map((x) => ({ id: x.team_id, name: x.name })));
+    const winCards = winTargets.map((tg) => {
+      const w = wins.find((x) => x.team_id === tg.id);
+      return { name: tg.name, open: !!w, noteTxt: w && w.note ? w.note : '', hasNote: !!(w && w.note),
+        status: w ? 'Open until ' + clock(w.until) + ' · ' + left(w.until) + ' left' : 'Closed', stCls: 'pm-st ' + (w ? 'pm-st--open' : 'pm-st--draft'),
+        openLabel: (w ? 'Restart for ' : 'Open for ') + durText, openAria: (w ? 'Restart the changes window for ' : 'Open a changes window for ') + tg.name,
+        extAria: 'Add 30 minutes to the window for ' + tg.name, closeAria: 'Close the window for ' + tg.name,
+        doOpen: () => this.act('amend.open', { team_id: tg.id, minutes: s.winMin, note: s.winNote }, () => 'Changes window opened for ' + tg.name + ' (' + durText + ').'),
+        doExtend: () => this.act('amend.extend', { team_id: tg.id, minutes: 30 }, () => 'Added 30 minutes for ' + tg.name + '.'),
+        doClose: () => this.act('amend.close', { team_id: tg.id }, () => 'Changes window closed for ' + tg.name + '.') };
+    });
+    const winHelp = T.status === 'regopen' ? 'Registration is open for every team, so no window is needed.'
+      : T.status === 'draft' ? 'Registration has not opened yet. Open it in Tournament setup. A window is for changes after registration closes.'
+      : T.status === 'ended' ? 'The tournament has ended. Changes windows can no longer be opened.'
+      : 'Let a team change Doubles partners, team entries, substitutions and withdrawals for a while, after registration has closed. New bowlers cannot be added, and a bowler who has already bowled stays locked. The window ends by itself. If the lane draw is already made, affected blocks are flagged for you on Squads and Lanes.';
+
     // ---------- overview ----------
     const ovCards = teams.map((tm) => {
       const cc = d.counts[tm.team_id] || {};
@@ -944,8 +1020,8 @@ class Component extends DCLogic {
     });
 
     // ---------- log ----------
-    const TAG = { athlete_add: 'Added', athlete_edit: 'Edited', athlete_import: 'Import', athlete_withdraw: 'Withdrawal', athlete_substitute: 'Substitution', athlete_restore: 'Restored' };
-    const logRows = d.log.map((l) => ({ at: PM.fmtTime(l.at), who: l.who, text: l.text, tag: l.phase === 'closed' ? 'After close' : (l.phase === 'early' && l.action === 'athlete_add' ? 'Early' : (TAG[l.action] || l.action)), tagCls: 'pm-tag' }));
+    const TAG = { athlete_add: 'Added', athlete_edit: 'Edited', athlete_import: 'Import', athlete_withdraw: 'Withdrawal', athlete_substitute: 'Substitution', athlete_restore: 'Restored', amend_open: 'Window opened', amend_extend: 'Window extended', amend_close: 'Window closed' };
+    const logRows = d.log.map((l) => ({ at: PM.fmtTime(l.at), who: l.who, text: l.text, tag: l.action.indexOf('amend_') === 0 ? TAG[l.action] : l.phase === 'amend' ? 'Amendment' : l.phase === 'closed' ? 'After close' : (l.phase === 'early' && l.action === 'athlete_add' ? 'Early' : (TAG[l.action] || l.action)), tagCls: 'pm-tag' }));
 
     // ---------- tabs ----------
     const tabDefs = [{ id: 'athletes', label: 'Athletes', count: baseAth.filter((a) => a.active).length }, { id: 'import', label: 'Bulk import', hide: !(isAdmin || isMgr) }, { id: 'teams', label: 'Teams overview' }, { id: 'log', label: 'Activity log', hide: isMar }].filter((x) => !x.hide);
@@ -984,6 +1060,7 @@ class Component extends DCLogic {
       importRows: parsed.rows, noImportRows: parsed.rows.length === 0,
       importEmptyMsg: cats.length === 0 ? 'Add categories in Tournament setup first. Imports match rows to categories by name.' : (canAdd ? 'Paste rows on the left, or load the example rows to see how checking works.' : 'Importing is closed for your role right now.'),
       readyTxt: readyN + ' ready', badTxt: badN + ' with problems', readyN, badN, importGoOff: !canAdd || readyN === 0 || s.busy, doImport, importLabel: s.busy ? 'Importing…' : (readyN === 0 ? 'Import rows' : 'Import ' + readyN + (readyN === 1 ? ' ready row' : ' ready rows')),
+      showWin: isAdmin, canWin, winHelp, minChips, winCards, winNote: s.winNote, onWinNote: (e) => this.setState({ winNote: e.target.value }), openWins: wins.length,
       ovCards, teamsNote: isMgr ? 'Other teams show how many bowlers they have entered, nothing more. Your own team is outlined.' : isMar ? 'Entries per team and category.' : 'Entries per team and category against each team’s limit.',
       logRows, noLog: logRows.length === 0, logNote: isMgr ? 'Changes to ' + myTeamName + ' entries. Every add, edit, withdrawal and substitution is recorded with who and when.' : 'Every add, edit, import, withdrawal and substitution is recorded with who and when. Changes after registration closes are tagged.'
     };
