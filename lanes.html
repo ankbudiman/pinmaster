@@ -55,7 +55,7 @@
   if (admin) PM.pref('tid', tid);
   document.getElementById('who').textContent = user.display_name || user.login_id;
   document.getElementById('dashl').href = PM.link('tournament.html', tid);
-  var D = null, busy = false, NOTE = null;
+  var D = null, busy = false, NOTE = null, PULL = {};
 
   function authFail(e) { if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return true; } return false; }
   function say(text, kind) { NOTE = text ? { text: text, kind: kind || 'ok' } : null; }
@@ -115,10 +115,55 @@
       run('entries.lock', {}, function (r) { return (first ? 'Entries locked' : 'Entries refreshed') + ': ' + r.sync.created + ' new, ' + r.sync.retired + ' removed.'; });
     });
   }
+  function NUM() { return D.draw_method === 'numbers'; }
+  function pullReady(catId) {
+    var m = (D.pull || {})[catId] || {}, inCat = {};
+    D.blocks.forEach(function (b) { if (b.category_id === catId) b.lots.concat(b.missing).forEach(function (l) { if (l.team_id) inCat[l.team_id] = true; }); });
+    var ids = Object.keys(inCat);
+    return ids.length > 0 && ids.every(function (t) { return !!m[t]; });
+  }
+  function savePull(cat) {
+    var nums = {};
+    D.teams.forEach(function (t) { var v = ((PULL[cat.id] || {})[t.team_id]); nums[t.team_id] = v === undefined ? (((D.pull || {})[cat.id] || {})[t.team_id] || '') : v; });
+    delete PULL[cat.id];
+    run('lanes.setpull', { category_id: cat.id, numbers: nums }, function () { return 'Numbers saved for ' + cat.name + '.'; });
+  }
+  function drawByNumbers(b) {
+    var running = ['live', 'paused'].indexOf(D.tournament.status) >= 0 && b.lots.length > 0;
+    ask((b.lots.length ? 'Draw ' + b.name + ' again by numbers?' : 'Draw ' + b.name + ' by numbers?'),
+      'Teams start at the number they pulled for ' + b.category + '. When a team has more than one pair or trio, they follow in rounds: after every team has its first entry placed, each team gets its second, and so on.' + (b.lots.length ? ' Every lane in this block is drawn again.' : ''),
+      b.lots.length ? 'Draw again' : 'Draw by numbers', running, b.lots.length > 0).then(function (v) {
+      if (v === null) return;
+      run('lanes.draw', { block_id: b.block_id, mode: 'full', reason: v }, function () { return b.name + ': lanes drawn by numbers.'; });
+    });
+  }
+  function pullCard() {
+    var cats = [], seen = {};
+    D.blocks.forEach(function (b) { if (b.state !== 'n/a' && !seen[b.category_id]) { seen[b.category_id] = true; cats.push({ id: b.category_id, name: b.category }); } });
+    if (!cats.length || !D.teams.length) return null;
+    return h('section', { class: 'ln-blk' },
+      h('div', { class: 'ln-hd' }, h('h3', { text: 'Number pull' })),
+      h('p', { class: 'pm-help', style: 'margin:0', text: 'Type each team\'s pulled number for each category and save. Each team needs a different number. Then draw each block by numbers. The method is set in Tournament setup.' }),
+      cats.map(function (c) {
+        var saved = (D.pull || {})[c.id] || {};
+        return h('div', { style: 'display:flex;flex-direction:column;gap:8px;padding-top:6px' },
+          h('div', { class: 'ln-tags' }, h('strong', { text: c.name }), pullReady(c.id) ? tag('Numbers saved', 'pm-tag--ok') : tag('Numbers missing', 'pm-tag--warn')),
+          h('div', { style: 'display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end' },
+            D.teams.map(function (t) {
+              var id = 'pn-' + c.id + '-' + t.team_id;
+              var cur = (PULL[c.id] || {})[t.team_id];
+              return h('div', { style: 'width:96px' }, h('label', { class: 'pm-lbl', for: id, text: t.code || t.name }),
+                h('input', { class: 'pm-in', id: id, type: 'number', min: '1', max: '99', inputmode: 'numeric', value: cur !== undefined ? cur : (saved[t.team_id] || ''), disabled: busy,
+                  onInput: function (e) { (PULL[c.id] = PULL[c.id] || {})[t.team_id] = e.target.value; } }));
+            }),
+            h('button', { class: 'pm-btn', type: 'button', disabled: busy, onClick: function () { savePull(c); } }, 'Save numbers')));
+      }));
+  }
   function drawAll() {
     run('lanes.draw', { block_id: '*' }, function (r) { var n = (r.results || []).filter(function (x) { return x.status === 'drawn'; }).length; return n ? 'Lanes drawn for ' + n + (n === 1 ? ' block.' : ' blocks.') : 'Nothing to draw.'; });
   }
   function drawBlock(b, mode) {
+    if (NUM()) { drawByNumbers(b); return; }
     var running = ['live', 'paused'].indexOf(D.tournament.status) >= 0 && mode === 'full' && b.lots.length > 0;
     var q = mode === 'fill'
       ? ['Fill the gaps in ' + b.name + '?', 'Entries that have no lane get one. Lanes already drawn do not move.', 'Fill gaps', false, false]
@@ -164,8 +209,8 @@
     if (b.orphan) kids.push(h('div', { class: 'pm-msg pm-msg--warn', text: b.orphan + (b.orphan === 1 ? ' lane belongs' : ' lanes belong') + ' to an entry that has changed. Fill the gaps to free ' + (b.orphan === 1 ? 'it.' : 'them.') }));
     if (admin && D.locked_at && D.can_lock) {
       var acts = [];
-      if (b.state === 'not_drawn') acts.push(h('button', { class: 'pm-btn pm-btn--pri', type: 'button', disabled: busy, onClick: function () { drawBlock(b, 'full'); } }, 'Draw lanes'));
-      if (b.state === 'needs_check') acts.push(h('button', { class: 'pm-btn pm-btn--pri', type: 'button', disabled: busy, onClick: function () { drawBlock(b, 'fill'); } }, 'Fill gaps'));
+      if (b.state === 'not_drawn') acts.push(h('button', { class: 'pm-btn pm-btn--pri', type: 'button', disabled: busy, onClick: function () { drawBlock(b, 'full'); } }, (NUM() ? 'Draw by numbers' : 'Draw lanes')));
+      if (b.state === 'needs_check' && !NUM()) acts.push(h('button', { class: 'pm-btn pm-btn--pri', type: 'button', disabled: busy, onClick: function () { drawBlock(b, 'fill'); } }, 'Fill gaps'));
       if (b.lots.length && !b.scored) acts.push(h('button', { class: 'pm-btn pm-btn--sm pm-btn--danger', type: 'button', disabled: busy, onClick: function () { drawBlock(b, 'full'); } }, 'Draw again'));
       if (acts.length) kids.push(h('div', { class: 'pm-act' }, acts));
     }
@@ -185,6 +230,7 @@
     var kids = [
       h('div', { class: 'ln-tags' }, tag(PM.STATUS[t.status] || t.status, t.status === 'live' ? 'pm-tag--ok' : (t.status === 'regclosed' || t.status === 'paused' ? 'pm-tag--warn' : '')),
         D.locked_at ? tag('Entries locked', 'pm-tag--ok') : tag('Entries not locked', 'pm-tag--warn'),
+        tag(NUM() ? 'Lane draw: number pull' : 'Lane draw: random'),
         nCheck ? tag(nCheck + (nCheck === 1 ? ' block needs checking' : ' blocks need checking'), 'pm-tag--warn') : null),
       h('h1', { class: 'pm-h', style: 'font-size:44px;line-height:1.05', text: 'Squads and lanes' }),
       h('p', { style: 'color:var(--ink3)', text: t.name + (t.venue ? ' · ' + t.venue : '') + ' · ' + (t.lanes ? t.lanes + ' lanes' : 'lanes not set') + ' · ' + t.per_lane + ' per lane' }),
@@ -198,6 +244,7 @@
         if (!D.locked_at) bar.push(h('p', { class: 'pm-help', style: 'margin:0;flex:1 1 280px', text: 'Locking creates the Singles and Doubles entries from the registered bowlers and their partners. After that, team changes go through a changes window that you open on the Participants page.' }));
       }
       kids.push(h('div', { class: 'ln-bar' }, bar));
+      if (D.locked_at && D.can_lock && NUM()) kids.push(pullCard());
     } else {
       kids.push(h('p', { class: 'pm-help', style: 'margin:0', text: D.locked_at ? 'Read only. The Admin makes and changes the lane draw.' : 'The lane draw has not been made yet.' }));
     }

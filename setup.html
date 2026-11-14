@@ -1267,7 +1267,7 @@ class Component extends DCLogic {
       handicap: false, hcPct: 80, hcBase: 200,
       tb: ['last', 'last2'], needRoll: true,
       pts: true, scale: ['10', '8', '6', '5', '4', '3', '2', '1'], mult: { s: 1, d: 1, t: 1, g: 1, a: 1, m: 1 }, medals: 3, teamRule: 'points', indRule: 'medals',
-      lanes: 24, perLane: 2, movePair: 2, moveTeam: 1, moveEvery: 2, moveDir: 'right',
+      lanes: 24, perLane: 2, drawMethod: 'random', movePair: 2, moveTeam: 1, moveEvery: 2, moveDir: 'right',
       mGames: 0, mCarry: 'none',
       sOn: false, sN: 3, sGames: 1, sSeed: 'masters',
       groups: { sd: [], t: [], g: [] }
@@ -1411,6 +1411,7 @@ class Component extends DCLogic {
         ] },
         { title: 'LANES AND SCHEDULE', rows: [
           { k: 'lanes', label: 'Venue lanes', val: c.lanes + ' lanes, ' + plural(c.perLane, 'bowler') + ' per lane', risky: false },
+          { k: 'drawMethod', label: 'Lane draw', val: c.drawMethod === 'numbers' ? 'Number pull' : 'Random draw', risky: false },
           { k: 'move', label: 'Lane movement', val: move, risky: false },
           { k: 'groups', label: 'Block groupings', val: grpText, risky: false }
         ] },
@@ -1506,6 +1507,9 @@ class Component extends DCLogic {
         rBlocks = [
           { title: 'Bowlers per lane', note: 'The number of lanes comes from Details (' + lanesN + ' lanes). Lane draw and Masters use both numbers.', fields: [
             field('Bowlers per lane', 'Bowlers who share one lane in a squad.', optChips(cfg.perLane, [[1, '1'], [2, '2'], [3, '3']], (v) => updCfg({ perLane: v })), false)
+          ] },
+          { title: 'Lane draw', note: 'Random: the app draws lanes by chance. Number pull: teams pull numbers and the Admin types them in on the Squads and Lanes page. Each team starts at its number; extra pairs or trios of a team follow in rounds.', fields: [
+            field('Draw method', 'Applies to every block of this tournament.', optChips(cfg.drawMethod || 'random', [['random', 'Random draw'], ['numbers', 'Number pull']], (v) => updCfg({ drawMethod: v })), false)
           ] },
           { title: 'Lane movement', note: 'How far a pair or team moves after the set number of games. Set 0 for no movement. Different tours use different rules.', fields: [
             field('Pairs move', 'Lanes a pair moves each time.', optChips(cfg.movePair, [[0, '0'], [1, '1'], [2, '2'], [3, '3'], [4, '4']], (v) => updCfg({ movePair: v })), false),
