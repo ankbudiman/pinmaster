@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leaderboard · Pin Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pm.css">
+<style>
+.lb-nav{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.lb-nav a{color:#C9D4E5;text-decoration:none;font-size:14px;font-weight:600}
+.lb-nav a:hover{color:#fff;text-decoration:underline}
+.lb-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.lb-chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;font:600 14px Inter,sans-serif;cursor:pointer;min-height:44px}
+.lb-chip[aria-pressed="true"]{background:#0B2A5B;color:#fff;border-color:#0B2A5B}
+.lb-num{text-align:right;font-variant-numeric:tabular-nums}
+.lb-rank{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:24px}
+.lb-tot{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:24px;text-align:right}
+.lb-wait{background:#F6F8FB;border:1px dashed var(--line);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--ink3)}
+.lb-scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<header class="pm-top">
+  <span class="pm-brand" style="font-size:22px">PIN MASTER</span>
+  <nav class="lb-nav" aria-label="Breadcrumb"><a id="dashl" href="tournament.html">&larr; Dashboard</a></nav>
+  <span class="sp"></span>
+  <span id="who" style="font-size:14px;color:#C9D4E5"></span>
+  <button class="pm-btn" id="out" type="button">Sign out</button>
+</header>
+<main class="pm-wrap">
+  <div id="note" aria-live="polite"></div>
+  <section class="pm-card" id="head" aria-busy="true"><p class="pm-help">Loading the leaderboard…</p></section>
+  <div id="body"></div>
+</main>
+<script src="config.js"></script>
+<script src="pm.js"></script>
+<script>
+(function () {
+  var PM = window.PM, h = PM.h;
+  var sess = PM.getSession();
+  if (!sess || !sess.user) { PM.goLogin(); return; }
+  var user = sess.user, admin = user.role === 'admin';
+  var tid = admin ? (PM.q('t') || PM.pref('tid') || '') : (user.tournament_id || '');
+  if (!tid) { location.replace(admin ? 'hub.html' : 'login.html'); return; }
+  if (admin) PM.pref('tid', tid);
+  document.getElementById('who').textContent = user.display_name || user.login_id;
+  document.getElementById('dashl').href = PM.link('tournament.html', tid);
+  document.getElementById('out').addEventListener('click', function () { PM.api('auth.logout').catch(function () {}).then(function () { PM.setSession(null); PM.goLogin(); }); });
+  var D = null, cat = '', view = 'events', mode = 'all', busy = false;
+
+  function load() {
+    busy = true; paint();
+    PM.api('results.load', { tournament_id: tid }).then(function (d) {
+      D = d; busy = false;
+      if (!cat || !d.categories.some(function (c) { return c.category_id === cat; })) cat = d.categories.length ? d.categories[0].category_id : '';
+      paint();
+    }, function (e) {
+      busy = false;
+      if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return; }
+      document.getElementById('note').replaceChildren(h('div', { class: 'pm-msg pm-msg--err', role: 'alert' }, (e && e.message) || 'Could not load.'));
+      paint();
+    });
+  }
+  function seg(items, cur, fn, label) {
+    return h('div', { class: 'lb-row', role: 'group', 'aria-label': label }, items.map(function (x) {
+      return h('button', { class: 'lb-chip', type: 'button', 'aria-pressed': String(cur === x[0]), onClick: function () { fn(x[0]); paint(); } }, x[1]);
+    }));
+  }
+  function stateTag(r, m) {
+    var o = r.off, a = r.all, G = r.games.length;
+    if (!a.played) return h('span', { class: 'pm-tag pm-tag--off', text: 'No score' });
+    if (o.played === G && G > 0) return h('span', { class: 'pm-tag pm-tag--ok', text: 'Official' });
+    if (m === 'off') return h('span', { class: 'pm-tag pm-tag--warn', text: o.played + ' of ' + G + ' locked' });
+    return h('span', { class: 'pm-tag pm-tag--warn', text: a.played < G ? a.played + ' of ' + G + ' games' : 'Not locked yet' });
+  }
+  function rk(x) { return x.rank ? String(x.rank) : '–'; }
+  function eventBoard(bd) {
+    var G = bd.games, ths = ['Rank', 'Lane', 'Name', 'Team'].concat(Array.apply(null, Array(G)).map(function (_, i) { return 'G' + (i + 1); }), ['Total', 'Avg', 'Gap', 'Status']);
+    var trs = bd.rows.map(function (r) {
+      var x = r[mode];
+      return h('tr', null, h('td', { class: 'lb-rank', text: rk(x) }), h('td', { text: r.lane }), h('td', { text: r.name || ('Team ' + r.entry_no) }), h('td', { text: r.team }),
+        r.games.map(function (g) { return h('td', { class: 'lb-num', text: g.pins == null || (mode === 'off' && !g.locked) ? '' : (g.pins + (g.locked ? '' : '*')) }); }),
+        h('td', { class: 'lb-tot', text: x.played ? String(x.total) : '' }),
+        h('td', { class: 'lb-num', text: x.played ? (Math.round(x.total / x.played * 10) / 10).toFixed(1) : '' }),
+        h('td', { class: 'lb-num', text: x.played && x.rank > 1 ? '-' + x.gap : '' }),
+        h('td', null, stateTag(r, mode)));
+    });
+    return h('section', { class: 'pm-card' }, h('h2', { class: 'pm-h', style: 'font-size:26px', text: bd.event }),
+      bd.rows.length ? h('div', { class: 'lb-scroll' }, h('table', { class: 'pm-tbl lb-evt', 'data-board': bd.event_key }, h('thead', null, h('tr', null, ths.map(function (t) { return h('th', { text: t }); }))), h('tbody', null, trs)))
+        : h('p', { class: 'pm-help', text: 'No lanes drawn for this event yet.' }));
+  }
+  function teamTable(teams, events, title) {
+    var ths = ['Rank', 'Team'].concat(events.map(function (e) { return e.name; }), ['Total pins', 'Status']);
+    return h('section', { class: 'pm-card' }, h('h2', { class: 'pm-h', style: 'font-size:26px', text: title }),
+      teams.length ? h('div', { class: 'lb-scroll' }, h('table', { class: 'pm-tbl lb-team' }, h('thead', null, h('tr', null, ths.map(function (t) { return h('th', { text: t }); }))),
+        h('tbody', null, teams.map(function (t) {
+          return h('tr', null, h('td', { class: 'lb-rank', text: rk(t[mode]) }), h('td', { text: t.team }),
+            events.map(function (e) { var v = t.by_event[e.event_key]; return h('td', { class: 'lb-num', text: v ? String(v[mode]) : '' }); }),
+            h('td', { class: 'lb-tot', text: t[mode].played ? String(t[mode].total) : '' }),
+            h('td', null, h('span', { class: 'pm-tag' + (t[mode].played ? '' : ' pm-tag--off'), text: t[mode].played ? (mode === 'all' ? 'Provisional' : 'Locked scores only') : 'No score' })));
+        })))) : h('p', { class: 'pm-help', text: 'No teams with entries yet.' }));
+  }
+  function paint() {
+    var head = document.getElementById('head'), body = document.getElementById('body');
+    head.setAttribute('aria-busy', String(!D || busy));
+    if (!D) { return; }
+    var t = D.tournament;
+    head.replaceChildren(h('div', { class: 'lb-row' }, h('h1', { class: 'pm-h', style: 'font-size:34px', text: 'Leaderboard' }), h('span', { class: 'pm-tag', text: PM.STATUS[t.status] || t.status }),
+      h('button', { class: 'pm-btn pm-btn--sm', id: 'refresh', type: 'button', disabled: busy, onClick: load }, busy ? 'Refreshing…' : 'Refresh')),
+      h('p', { class: 'pm-help', style: 'margin:6px 0 12px', text: t.name + (t.venue ? ' · ' + t.venue : '') }),
+      D.categories.length ? h('div', { style: 'display:flex;flex-direction:column;gap:10px' },
+        seg(D.categories.map(function (c) { return [c.category_id, c.name]; }), cat, function (v) { cat = v; }, 'Category'),
+        h('div', { class: 'lb-row' },
+          seg([['events', 'By event'], ['teams', 'Teams']], view, function (v) { view = v; }, 'View'),
+          seg([['all', 'All submitted scores'], ['off', 'Locked (official) only']], mode, function (v) { mode = v; }, 'Scores shown'))) : h('p', { class: 'pm-help', text: 'No categories set up yet.' }));
+    var kids = [];
+    var boards = D.boards.filter(function (b) { return b.category_id === cat; });
+    kids.push(h('p', { class: 'pm-help', style: 'margin:0', id: 'lbnote', text: mode === 'all' ? 'Showing every submitted score. A * marks a game that is not locked yet, so the result is unofficial.' : 'Showing locked scores only. These are the official results.' }));
+    if (!boards.length) kids.push(h('section', { class: 'pm-card' }, h('p', { class: 'pm-help', text: 'No events with lanes drawn in this category yet.' })));
+    else if (view === 'events') boards.forEach(function (b) { kids.push(eventBoard(b)); });
+    else {
+      var ov = D.overall.filter(function (o) { return o.category_id === cat; })[0];
+      var evs = D.events.filter(function (e) { return boards.some(function (b) { return b.event_key === e.event_key; }); });
+      kids.push(teamTable(ov ? ov.teams : [], evs, 'Team pin totals'));
+    }
+    kids.push(h('div', { class: 'lb-wait', id: 'lbwait', text: 'Waiting for the rule sheet: handicap, tie-breaks, points, medals, stepladder, carry-over, Masters and All Events. Places here are plain pin totals; equal totals share a place.' }));
+    body.replaceChildren.apply(body, kids.map(function (k) { return h('div', { style: 'margin-bottom:14px' }, k); }));
+  }
+  load();
+})();
+</script>
+</body>
+</html>
