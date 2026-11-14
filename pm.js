@@ -87,7 +87,7 @@
   }
 
   // ---------- navigation: which page to open, and where the tournament id lives (the web address: ?t=) ----------
-  var PAGES = ['hub.html', 'tournament.html', 'setup.html', 'users.html', 'participants.html', 'lanes.html'];
+  var PAGES = ['hub.html', 'tournament.html', 'setup.html', 'users.html', 'participants.html', 'lanes.html', 'scores.html'];
   var STATUS = { draft: 'Draft', regopen: 'Registration open', regclosed: 'Registration closed', live: 'Live', paused: 'Paused', ended: 'Ended' };
   function q(name) { try { return new URLSearchParams(location.search).get(name) || ''; } catch (e) { return ''; } }
   function here() { return (location.pathname.split('/').pop() || '') + location.search; }
@@ -100,7 +100,7 @@
   // Where to go after signing in: the page the person asked for, else their home page. Non-admins only ever get their tournament page.
   function landing(user) {
     var n = safeNext(q('next'));
-    if (n && (user.role === 'admin' || n.indexOf('tournament.html') === 0 || n.indexOf('participants.html') === 0 || n.indexOf('lanes.html') === 0)) return n;
+    if (n && (user.role === 'admin' || n.indexOf('tournament.html') === 0 || n.indexOf('participants.html') === 0 || n.indexOf('lanes.html') === 0 || n.indexOf('scores.html') === 0)) return n;
     return home(user);
   }
   function link(page, id, extra) { return page + (id ? '?t=' + encodeURIComponent(id) + (extra ? '&' + extra : '') : (extra ? '?' + extra : '')); }
