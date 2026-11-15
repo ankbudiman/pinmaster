@@ -43,6 +43,7 @@
   </div>
   <div id="banner" aria-live="polite"></div>
   <div id="list" class="hub-cards" aria-busy="true"></div>
+  <section id="arch" style="margin-top:28px"></section>
 </main>
 <script src="config.js"></script>
 <script src="pm.js"></script>
@@ -62,6 +63,34 @@
   }
   function stat(n, label) { return h('div', null, h('b', { text: String(n) }), h('span', { text: label })); }
 
+  var openDel = '', showArch = false, working = false;
+  function run(fn, okText) {
+    if (working) return; working = true;
+    fn().then(function (res) { working = false; openDel = ''; load(okText); }, function (e) {
+      working = false;
+      if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return; }
+      document.getElementById('banner').replaceChildren(msg('err', (e && e.message) || 'That did not work.', false));
+      paintArch();
+    });
+  }
+  function archive(r, on) { run(function () { return PM.api('tournaments.archive', { tournament_id: r.tournament_id, archived: on }); }, on ? '"' + r.name + '" archived. Find it under Archived below.' : '"' + r.name + '" restored.'); }
+  function delPanel(r) {
+    var inp = h('input', { class: 'pm-in', type: 'text', 'aria-label': 'Type the tournament name to confirm', placeholder: r.name, autocomplete: 'off', style: 'margin:8px 0' });
+    var btn = h('button', { class: 'pm-btn', type: 'button', disabled: true, style: 'color:#8A1C12;border-color:#8A1C12', onClick: function () {
+      run(function () { return PM.api('tournaments.delete', { tournament_id: r.tournament_id, confirm_name: inp.value }); }, '"' + r.name + '" was deleted for good.'); } }, 'Delete forever');
+    inp.addEventListener('input', function () { btn.disabled = inp.value.trim().toLowerCase() !== String(r.name || '').trim().toLowerCase(); });
+    return h('div', { class: 'pm-msg pm-msg--err', role: 'group', 'aria-label': 'Confirm delete' },
+      h('p', { style: 'margin:0 0 4px', text: 'This removes the tournament and all its teams, bowlers, lanes, scores and logins. It cannot be undone. Type the name to confirm:' }),
+      inp, h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' }, btn, h('button', { class: 'pm-btn', type: 'button', onClick: function () { openDel = ''; paintAll(); } }, 'Cancel')));
+  }
+  function mgmt(r) {
+    var live = r.status === 'live' || r.status === 'paused';
+    var kids = [];
+    if (r.archived) kids.push(h('button', { class: 'pm-btn', type: 'button', 'data-act': 'restore', onClick: function () { archive(r, false); } }, 'Restore'));
+    else if (!live) kids.push(h('button', { class: 'pm-btn', type: 'button', 'data-act': 'archive', onClick: function () { archive(r, true); } }, 'Archive'));
+    if (r.archived || r.status === 'draft') kids.push(h('button', { class: 'pm-btn', type: 'button', 'data-act': 'delete', style: 'color:#8A1C12', onClick: function () { openDel = r.tournament_id; paintAll(); } }, 'Delete…'));
+    return h('div', null, h('div', { class: 'hub-act', style: 'margin-top:8px' }, kids), openDel === r.tournament_id ? delPanel(r) : null);
+  }
   function card(r) {
     var act = PM.cardAction(r), c = r.counts;
     var scores = r.status === 'draft' || r.status === 'regopen' || r.status === 'regclosed' ? 'Scoring has not started' : (c.scores ? c.scores + ' scores entered' : 'No scores entered yet');
@@ -77,10 +106,28 @@
       h('p', { style: 'font-size:14px;color:var(--ink3)', text: 'Scores: ' + scores }),
       h('div', { class: 'hub-act' },
         h('a', { class: 'pm-btn pm-btn--pri', href: act.href, text: act.label }),
-        h('a', { class: 'pm-btn', href: PM.link('tournament.html', r.tournament_id), text: 'Dashboard' })));
+        h('a', { class: 'pm-btn', href: PM.link('tournament.html', r.tournament_id), text: 'Dashboard' })),
+      mgmt(r));
   }
 
-  function load() {
+  var ALL = [];
+  function paintArch() {
+    var box = document.getElementById('arch'), a = ALL.filter(function (r) { return r.archived; });
+    if (!a.length) { box.replaceChildren(); return; }
+    box.replaceChildren(h('button', { class: 'pm-btn', id: 'archtoggle', type: 'button', 'aria-expanded': String(showArch), onClick: function () { showArch = !showArch; paintArch(); } }, (showArch ? 'Hide' : 'Show') + ' archived (' + a.length + ')'),
+      showArch ? h('div', { class: 'hub-cards', id: 'archlist', style: 'margin-top:14px' }, a.map(card)) : null);
+  }
+  function paintAll() {
+    var list = document.getElementById('list'), rows = ALL.filter(function (r) { return !r.archived; });
+    if (!rows.length) {
+      list.replaceChildren(h('div', { class: 'hub-empty', style: 'grid-column:1/-1' },
+        h('h2', { class: 'pm-h', style: 'font-size:28px', text: ALL.length ? 'No active tournaments' : 'No tournaments yet' }),
+        h('p', { style: 'color:var(--ink3)', text: ALL.length ? 'Everything is archived. Restore one below, or create a new tournament.' : 'Create the first one. You will fill in its details, teams, categories and schedule step by step.' }),
+        h('a', { class: 'pm-btn pm-btn--pri', href: 'setup.html?new=1', style: 'text-decoration:none', text: '+ Create New Tournament' })));
+    } else list.replaceChildren.apply(list, rows.map(card));
+    paintArch();
+  }
+  function load(okText) {
     var list = document.getElementById('list'), banner = document.getElementById('banner');
     list.setAttribute('aria-busy', 'true'); banner.replaceChildren(); list.replaceChildren(h('p', { class: 'pm-help', text: 'Loading tournaments…' }));
     PM.api('hub.list').then(function (d) {
@@ -88,12 +135,9 @@
         var o = (ORDER[a.status] == null ? 9 : ORDER[a.status]) - (ORDER[b.status] == null ? 9 : ORDER[b.status]);
         return o || String(b.created_at).localeCompare(String(a.created_at));
       });
-      if (!rows.length) {
-        list.replaceChildren(h('div', { class: 'hub-empty', style: 'grid-column:1/-1' },
-          h('h2', { class: 'pm-h', style: 'font-size:28px', text: 'No tournaments yet' }),
-          h('p', { style: 'color:var(--ink3)', text: 'Create the first one. You will fill in its details, teams, categories and schedule step by step.' }),
-          h('a', { class: 'pm-btn pm-btn--pri', href: 'setup.html?new=1', style: 'text-decoration:none', text: '+ Create New Tournament' })));
-      } else list.replaceChildren.apply(list, rows.map(card));
+      ALL = rows;
+      paintAll();
+      if (typeof okText === 'string') banner.replaceChildren(msg('ok', okText, false));
     }).catch(function (e) {
       if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return; }
       list.replaceChildren(); banner.replaceChildren(msg('err', (e && e.message) || 'Could not load the tournaments.', true));
