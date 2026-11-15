@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reports · Pin Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pm.css">
+<style>
+.lb-nav{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.lb-nav a{color:#C9D4E5;text-decoration:none;font-size:14px;font-weight:600}
+.lb-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.lb-chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;font:600 14px Inter,sans-serif;cursor:pointer;min-height:44px}
+.lb-chip[aria-pressed="true"]{background:#0B2A5B;color:#fff;border-color:#0B2A5B}
+.lb-num{text-align:right;font-variant-numeric:tabular-nums}
+.lb-rank,.lb-tot{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:24px}
+.lb-tot{text-align:right}
+.lb-wait{background:#F6F8FB;border:1px dashed var(--line);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--ink3)}
+.lb-scroll{overflow-x:auto}
+.rp-print{display:none}
+@media print{
+  body{background:#fff}
+  .pm-top,#note,#ctl,.lb-wait,.noprint{display:none!important}
+  .pm-wrap{max-width:none;padding:0}
+  .pm-card{box-shadow:none;border:0;padding:0;break-inside:avoid;page-break-inside:avoid;margin-bottom:18px}
+  .rp-print{display:block}
+  .rp-sign{display:flex;gap:40px;margin-top:40px}
+  .rp-sign div{flex:1;border-top:1px solid #000;padding-top:4px;font-size:12px}
+  .lb-scroll{overflow:visible}
+  .pm-tbl{font-size:11px}
+  .pm-tbl thead{display:table-header-group!important}
+}
+</style>
+</head>
+<body>
+<header class="pm-top">
+  <span class="pm-brand" style="font-size:22px">PIN MASTER</span>
+  <nav class="lb-nav" aria-label="Breadcrumb"><a id="dashl" href="tournament.html">&larr; Dashboard</a></nav>
+  <span class="sp"></span>
+  <span id="who" style="font-size:14px;color:#C9D4E5"></span>
+  <button class="pm-btn" id="out" type="button">Sign out</button>
+</header>
+<main class="pm-wrap">
+  <div id="note" aria-live="polite"></div>
+  <section class="pm-card" id="head" aria-busy="true"><p class="pm-help">Loading the reports…</p></section>
+  <div id="body"></div>
+</main>
+<script src="config.js"></script>
+<script src="pm.js"></script>
+<script>
+(function () {
+  var PM = window.PM, h = PM.h;
+  var sess = PM.getSession();
+  if (!sess || !sess.user) { PM.goLogin(); return; }
+  var user = sess.user;
+  if (user.role !== 'admin') { location.replace('tournament.html'); return; }
+  var tid = PM.q('t') || PM.pref('tid') || '';
+  if (!tid) { location.replace('hub.html'); return; }
+  PM.pref('tid', tid);
+  document.getElementById('who').textContent = user.display_name || user.login_id;
+  document.getElementById('dashl').href = PM.link('tournament.html', tid);
+  document.getElementById('out').addEventListener('click', function () { PM.api('auth.logout').catch(function () {}).then(function () { PM.setSession(null); PM.goLogin(); }); });
+  var D = null, cat = '', busy = false;
+
+  function load() {
+    busy = true; paint();
+    PM.api('results.load', { tournament_id: tid }).then(function (d) {
+      D = d; busy = false;
+      if (!cat || !d.categories.some(function (c) { return c.category_id === cat; })) cat = d.categories.length ? d.categories[0].category_id : '';
+      paint();
+    }, function (e) {
+      busy = false;
+      if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return; }
+      document.getElementById('note').replaceChildren(h('div', { class: 'pm-msg pm-msg--err', role: 'alert' }, (e && e.message) || 'Could not load.'));
+      paint();
+    });
+  }
+  function rk(x) { return x.rank ? String(x.rank) : '–'; }
+  function avg(x) { return x.played ? (Math.round(x.total / x.played * 10) / 10).toFixed(1) : ''; }
+  function done(r) { return r.games.length > 0 && r.off.played === r.games.length; }
+  function catBoards(c) { return D.boards.filter(function (b) { return b.category_id === c; }); }
+  function counts(bd) { var n = bd.rows.length, d = bd.rows.filter(done).length; return { n: n, d: d }; }
+  function catName(c) { var x = D.categories.filter(function (k) { return k.category_id === c; })[0]; return x ? x.name : ''; }
+
+  // CSV (Excel opens it). Cells starting with = + - @ get a leading apostrophe so they are never read as formulas.
+  function cell(v) {
+    var s = v == null ? '' : String(v);
+    if (/^[=+\-@\t\r]/.test(s) && isNaN(Number(s))) s = "'" + s;
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function csvFor(cats) {
+    var out = [];
+    out.push(['Official results (locked scores only)'].map(cell).join(','));
+    out.push([D.tournament.name, D.tournament.venue || ''].map(cell).join(','));
+    cats.forEach(function (c) {
+      catBoards(c).forEach(function (bd) {
+        var G = bd.games, k = counts(bd);
+        out.push('');
+        out.push([catName(c) + ' - ' + bd.event, k.d + ' of ' + k.n + ' complete'].map(cell).join(','));
+        out.push(['Rank', 'Lane', 'Name', 'Team'].concat(Array.apply(null, Array(G)).map(function (_, i) { return 'G' + (i + 1); }), ['Total', 'Avg', 'Gap', 'Status']).map(cell).join(','));
+        bd.rows.forEach(function (r) {
+          var x = r.off;
+          out.push([rk(x), r.lane, r.name || ('Team ' + r.entry_no), r.team].concat(r.games.map(function (g) { return g.locked && g.pins != null ? g.pins : ''; }), [x.played ? x.total : '', avg(x), x.played && x.rank > 1 ? '-' + x.gap : '', done(r) ? 'Official' : (x.played ? x.played + ' of ' + G + ' locked' : 'No locked score')]).map(cell).join(','));
+        });
+      });
+      var ov = D.overall.filter(function (o) { return o.category_id === c; })[0];
+      if (ov && ov.teams.length) {
+        var evs = D.events.filter(function (e) { return catBoards(c).some(function (b) { return b.event_key === e.event_key; }); });
+        out.push('');
+        out.push([catName(c) + ' - Team pin totals'].map(cell).join(','));
+        out.push(['Rank', 'Team'].concat(evs.map(function (e) { return e.name; }), ['Total pins']).map(cell).join(','));
+        ov.teams.forEach(function (t) {
+          out.push([rk(t.off), t.team].concat(evs.map(function (e) { var v = t.by_event[e.event_key]; return v ? v.off : ''; }), [t.off.played ? t.off.total : '']).map(cell).join(','));
+        });
+      }
+    });
+    return '﻿' + out.join('\r\n') + '\r\n';
+  }
+  function download(name, text) {
+    var a = h('a', { href: URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' })), download: name });
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function fname(suffix) { return (D.tournament.name || 'tournament').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + suffix + '.csv'; }
+
+  function board(bd) {
+    var G = bd.games, k = counts(bd);
+    var ths = ['Rank', 'Lane', 'Name', 'Team'].concat(Array.apply(null, Array(G)).map(function (_, i) { return 'G' + (i + 1); }), ['Total', 'Avg', 'Gap', 'Status']);
+    var trs = bd.rows.map(function (r) {
+      var x = r.off;
+      return h('tr', null, h('td', { class: 'lb-rank', text: rk(x) }), h('td', { text: r.lane }), h('td', { text: r.name || ('Team ' + r.entry_no) }), h('td', { text: r.team }),
+        r.games.map(function (g) { return h('td', { class: 'lb-num', text: g.locked && g.pins != null ? String(g.pins) : '' }); }),
+        h('td', { class: 'lb-tot', text: x.played ? String(x.total) : '' }), h('td', { class: 'lb-num', text: avg(x) }),
+        h('td', { class: 'lb-num', text: x.played && x.rank > 1 ? '-' + x.gap : '' }),
+        h('td', null, done(r) ? h('span', { class: 'pm-tag pm-tag--ok', text: 'Official' }) : h('span', { class: 'pm-tag pm-tag--warn', text: x.played ? x.played + ' of ' + G + ' locked' : 'Not locked' })));
+    });
+    return h('section', { class: 'pm-card' }, h('div', { class: 'lb-row' }, h('h2', { class: 'pm-h', style: 'font-size:26px', text: bd.event }),
+      h('span', { class: 'pm-tag ' + (k.n && k.d === k.n ? 'pm-tag--ok' : 'pm-tag--warn'), text: k.d + ' of ' + k.n + ' complete' })),
+      bd.rows.length ? h('div', { class: 'lb-scroll' }, h('table', { class: 'pm-tbl rp-evt' }, h('thead', null, h('tr', null, ths.map(function (t) { return h('th', { text: t }); }))), h('tbody', null, trs)))
+        : h('p', { class: 'pm-help', text: 'No lanes drawn for this event yet.' }));
+  }
+  function teams(c) {
+    var ov = D.overall.filter(function (o) { return o.category_id === c; })[0];
+    var evs = D.events.filter(function (e) { return catBoards(c).some(function (b) { return b.event_key === e.event_key; }); });
+    var ths = ['Rank', 'Team'].concat(evs.map(function (e) { return e.name; }), ['Total pins']);
+    if (!ov || !ov.teams.length) return null;
+    return h('section', { class: 'pm-card' }, h('h2', { class: 'pm-h', style: 'font-size:26px', text: 'Team pin totals' }),
+      h('div', { class: 'lb-scroll' }, h('table', { class: 'pm-tbl rp-team' }, h('thead', null, h('tr', null, ths.map(function (t) { return h('th', { text: t }); }))),
+        h('tbody', null, ov.teams.map(function (t) {
+          return h('tr', null, h('td', { class: 'lb-rank', text: rk(t.off) }), h('td', { text: t.team }),
+            evs.map(function (e) { var v = t.by_event[e.event_key]; return h('td', { class: 'lb-num', text: v ? String(v.off) : '' }); }),
+            h('td', { class: 'lb-tot', text: t.off.played ? String(t.off.total) : '' }));
+        })))));
+  }
+  function paint() {
+    var head = document.getElementById('head'), body = document.getElementById('body');
+    head.setAttribute('aria-busy', String(!D || busy));
+    if (!D) return;
+    var t = D.tournament, bs = catBoards(cat);
+    var all = D.boards.reduce(function (a, b) { var k = counts(b); return [a[0] + k.d, a[1] + k.n]; }, [0, 0]);
+    head.replaceChildren(h('div', { class: 'lb-row', id: 'ctl' }, h('h1', { class: 'pm-h', style: 'font-size:34px', text: 'Reports' }), h('span', { class: 'pm-tag', text: PM.STATUS[t.status] || t.status }),
+      h('button', { class: 'pm-btn pm-btn--sm', id: 'refresh', type: 'button', disabled: busy, onClick: load }, busy ? 'Refreshing…' : 'Refresh')),
+      h('p', { class: 'pm-help', style: 'margin:6px 0 12px', text: t.name + (t.venue ? ' · ' + t.venue : '') + ' · ' + all[0] + ' of ' + all[1] + ' entries fully locked' }),
+      D.categories.length ? h('div', { class: 'lb-row noprint', style: 'flex-direction:column;align-items:flex-start;gap:10px' },
+        h('div', { class: 'lb-row', role: 'group', 'aria-label': 'Category' }, D.categories.map(function (c) {
+          return h('button', { class: 'lb-chip', type: 'button', 'aria-pressed': String(cat === c.category_id), onClick: function () { cat = c.category_id; paint(); } }, c.name);
+        })),
+        h('div', { class: 'lb-row' },
+          h('button', { class: 'pm-btn', id: 'print', type: 'button', onClick: function () { window.print(); } }, 'Print sheet'),
+          h('button', { class: 'pm-btn', id: 'csvcat', type: 'button', onClick: function () { download(fname(catName(cat).replace(/[^A-Za-z0-9]+/g, '_')), csvFor([cat])); } }, 'Download this category (Excel)'),
+          h('button', { class: 'pm-btn', id: 'csvall', type: 'button', onClick: function () { download(fname('all'), csvFor(D.categories.map(function (c) { return c.category_id; }))); } }, 'Download all categories (Excel)'))) : h('p', { class: 'pm-help', text: 'No categories set up yet.' }));
+    var kids = [];
+    kids.push(h('div', { class: 'rp-print' }, h('h1', { style: 'margin:0', text: t.name }), h('p', { style: 'margin:2px 0', text: (t.venue || '') }),
+      h('p', { style: 'margin:2px 0;font-weight:700', text: 'Official results: ' + catName(cat) + ' (locked scores only)' }),
+      h('p', { style: 'margin:2px 0;font-size:12px', text: 'Printed ' + new Date().toLocaleString() })));
+    kids.push(h('p', { class: 'pm-help noprint', style: 'margin:0', id: 'rpnote', text: 'Only locked scores are shown. They are the official results. An entry is Official once every game of the event is locked.' }));
+    if (!bs.length) kids.push(h('section', { class: 'pm-card' }, h('p', { class: 'pm-help', text: 'No events with lanes drawn in this category yet.' })));
+    else { bs.forEach(function (b) { kids.push(board(b)); }); var tm = teams(cat); if (tm) kids.push(tm); }
+    kids.push(h('div', { class: 'rp-print rp-sign' }, h('div', { text: 'Chief marshal' }), h('div', { text: 'Tournament director' })));
+    kids.push(h('div', { class: 'lb-wait', id: 'rpwait', text: 'Waiting for the rule sheet: handicap, tie-breaks, points, medals, stepladder, carry-over, Masters and All Events. Places here are plain pin totals; equal totals share a place.' }));
+    body.replaceChildren.apply(body, kids.map(function (k) { return h('div', { style: 'margin-bottom:14px' }, k); }));
+  }
+  load();
+})();
+</script>
+</body>
+</html>
