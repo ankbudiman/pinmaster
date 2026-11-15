@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live results · Pin Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pm.css">
+<style>
+.lb-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.lb-chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;font:600 14px Inter,sans-serif;cursor:pointer;min-height:44px}
+.lb-chip[aria-pressed="true"]{background:#0B2A5B;color:#fff;border-color:#0B2A5B}
+.lb-num{text-align:right;font-variant-numeric:tabular-nums}
+.lb-rank,.lb-tot{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:24px}
+.lb-tot{text-align:right}
+.lb-scroll{overflow-x:auto}
+.lb-wait{background:#F6F8FB;border:1px dashed var(--line);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--ink3)}
+.pm-top a.sl{color:#C9D4E5;font-size:14px;font-weight:600;text-decoration:none}
+.tl{display:block;text-decoration:none;color:inherit}
+</style>
+</head>
+<body>
+<header class="pm-top">
+  <span class="pm-brand" style="font-size:22px">PIN MASTER</span>
+  <span class="sp"></span>
+  <a class="sl" href="login.html">Staff sign in</a>
+</header>
+<main class="pm-wrap">
+  <div id="note" aria-live="polite"></div>
+  <section class="pm-card" id="head" aria-busy="true"><p class="pm-help">Loading…</p></section>
+  <div id="body"></div>
+</main>
+<script src="config.js"></script>
+<script src="pm.js"></script>
+<script>
+(function () {
+  var PM = window.PM, h = PM.h;
+  var tid = PM.q('t'), D = null, cat = '', view = 'results', busy = false, timer = null;
+  function err(e) { document.getElementById('note').replaceChildren(h('div', { class: 'pm-msg pm-msg--err', role: 'alert' }, (e && e.message) || 'Could not load.')); }
+  function listT() {
+    PM.api('public.tournaments').then(function (d) {
+      var rows = d.rows || [];
+      document.getElementById('head').setAttribute('aria-busy', 'false');
+      document.getElementById('head').replaceChildren(h('h1', { class: 'pm-h', style: 'font-size:34px', text: 'Live results' }), h('p', { class: 'pm-help', text: 'Choose a tournament.' }));
+      document.getElementById('body').replaceChildren.apply(document.getElementById('body'), rows.length ? rows.map(function (r) {
+        return h('a', { class: 'pm-card tl', style: 'margin-bottom:12px', href: 'public.html?t=' + encodeURIComponent(r.tournament_id) },
+          h('h2', { class: 'pm-h', style: 'font-size:24px', text: r.name }), h('p', { class: 'pm-help', style: 'margin:4px 0 0', text: [r.venue, r.start_date, PM.STATUS[r.status] || r.status].filter(Boolean).join(' · ') }));
+      }) : [h('p', { class: 'pm-help', text: 'No tournaments to show yet.' })]);
+    }, err);
+  }
+  function load() {
+    busy = true; paint();
+    PM.api('public.results', { tournament_id: tid }).then(function (d) {
+      D = d; busy = false;
+      document.getElementById('note').replaceChildren();
+      if (!cat || !d.categories.some(function (c) { return c.category_id === cat; })) cat = d.categories.length ? d.categories[0].category_id : '';
+      paint();
+    }, function (e) { busy = false; err(e); paint(); });
+  }
+  function rk(x) { return x.rank ? String(x.rank) : '–'; }
+  function board(bd) {
+    var G = bd.games, ths = ['Rank', 'Lane', 'Name', 'Team'].concat(Array.apply(null, Array(G)).map(function (_, i) { return 'G' + (i + 1); }), ['Total', 'Avg', 'Gap']);
+    return h('section', { class: 'pm-card' }, h('div', { class: 'lb-row' }, h('h2', { class: 'pm-h', style: 'font-size:26px', text: bd.event }),
+      h('span', { class: 'pm-tag ' + (bd.entries && bd.complete === bd.entries ? 'pm-tag--ok' : 'pm-tag--warn'), text: bd.complete + ' of ' + bd.entries + ' finished' })),
+      bd.rows.length ? h('div', { class: 'lb-scroll' }, h('table', { class: 'pm-tbl pb-evt' }, h('thead', null, h('tr', null, ths.map(function (t) { return h('th', { text: t }); }))),
+        h('tbody', null, bd.rows.map(function (r) {
+          return h('tr', null, h('td', { class: 'lb-rank', text: rk(r.off) }), h('td', { text: r.lane }), h('td', { text: r.name }), h('td', { text: r.team }),
+            r.games.map(function (g) { return h('td', { class: 'lb-num', text: g == null ? '' : String(g) }); }),
+            h('td', { class: 'lb-tot', text: String(r.off.total) }), h('td', { class: 'lb-num', text: r.avg.toFixed(1) }), h('td', { class: 'lb-num', text: r.off.rank > 1 ? '-' + r.off.gap : '' }));
+        }))))
+        : h('p', { class: 'pm-help', text: 'No official scores yet.' }));
+  }
+  function teams() {
+    var ov = D.overall.filter(function (o) { return o.category_id === cat; })[0];
+    var evs = D.events.filter(function (e) { return D.boards.some(function (b) { return b.category_id === cat && b.event_key === e.event_key; }); });
+    var ths = ['Rank', 'Team'].concat(evs.map(function (e) { return e.name; }), ['Total pins']);
+    return h('section', { class: 'pm-card' }, h('h2', { class: 'pm-h', style: 'font-size:26px', text: 'Team pin totals' }),
+      ov && ov.teams.length ? h('div', { class: 'lb-scroll' }, h('table', { class: 'pm-tbl pb-team' }, h('thead', null, h('tr', null, ths.map(function (t) { return h('th', { text: t }); }))),
+        h('tbody', null, ov.teams.map(function (t) {
+          return h('tr', null, h('td', { class: 'lb-rank', text: rk(t.off) }), h('td', { text: t.team }),
+            evs.map(function (e) { var v = t.by_event[e.event_key]; return h('td', { class: 'lb-num', text: v == null ? '' : String(v) }); }), h('td', { class: 'lb-tot', text: String(t.off.total) }));
+        })))) : h('p', { class: 'pm-help', text: 'No official scores yet.' }));
+  }
+  function schedule() {
+    var rows = D.schedule.filter(function (b) { return b.games > 0; });
+    return h('section', { class: 'pm-card' }, h('h2', { class: 'pm-h', style: 'font-size:26px', text: 'Schedule' }),
+      rows.length ? h('div', { class: 'lb-scroll' }, h('table', { class: 'pm-tbl pb-sched' }, h('thead', null, h('tr', null, ['Day', 'Time', 'Block', 'Category', 'Event', 'Lanes'].map(function (t) { return h('th', { text: t }); }))),
+        h('tbody', null, rows.map(function (b) { return h('tr', null, h('td', { text: 'Day ' + b.day }), h('td', { text: b.start_time || '' }), h('td', { text: b.name || '' }), h('td', { text: b.category }), h('td', { text: b.event }), h('td', { text: b.lane_from + '-' + b.lane_to })); }))))
+        : h('p', { class: 'pm-help', text: 'The schedule is not published yet.' }));
+  }
+  function chip(items, cur, fn, label) {
+    return h('div', { class: 'lb-row', role: 'group', 'aria-label': label }, items.map(function (x) { return h('button', { class: 'lb-chip', type: 'button', 'aria-pressed': String(cur === x[0]), onClick: function () { fn(x[0]); paint(); } }, x[1]); }));
+  }
+  function labelCells() {
+    Array.prototype.forEach.call(document.querySelectorAll('table.pm-tbl'), function (t) {
+      var th = Array.prototype.map.call(t.querySelectorAll('thead th'), function (x) { return x.textContent; });
+      Array.prototype.forEach.call(t.querySelectorAll('tbody tr'), function (tr) { Array.prototype.forEach.call(tr.children, function (td, i) { if (th[i]) td.setAttribute('data-l', th[i]); }); });
+    });
+  }
+  function paint() {
+    var head = document.getElementById('head'), body = document.getElementById('body');
+    head.setAttribute('aria-busy', String(!D || busy));
+    if (!D) return;
+    var t = D.tournament;
+    head.replaceChildren(h('div', { class: 'lb-row' }, h('h1', { class: 'pm-h', style: 'font-size:34px', text: t.name }), h('span', { class: 'pm-tag', text: PM.STATUS[t.status] || t.status }),
+      h('button', { class: 'pm-btn pm-btn--sm', id: 'refresh', type: 'button', disabled: busy, onClick: load }, busy ? 'Refreshing…' : 'Refresh')),
+      h('p', { class: 'pm-help', style: 'margin:6px 0 12px', text: [t.venue, t.start_date].filter(Boolean).join(' · ') + ' · updated ' + new Date(D.server_time).toLocaleTimeString() }),
+      h('div', { style: 'display:flex;flex-direction:column;gap:10px' },
+        D.categories.length ? chip(D.categories.map(function (c) { return [c.category_id, c.name]; }), cat, function (v) { cat = v; }, 'Category') : [],
+        chip([['results', 'Results'], ['teams', 'Teams'], ['schedule', 'Schedule']], view, function (v) { view = v; }, 'View')));
+    var kids = [h('p', { class: 'pm-help', style: 'margin:0', id: 'pbnote', text: 'Official results only: scores appear here once the tournament officials have locked them. The page refreshes by itself every minute.' })];
+    if (view === 'schedule') kids.push(schedule());
+    else if (view === 'teams') kids.push(teams());
+    else { var bs = D.boards.filter(function (b) { return b.category_id === cat; }); if (!bs.length) kids.push(h('section', { class: 'pm-card' }, h('p', { class: 'pm-help', text: 'No events in this category yet.' }))); bs.forEach(function (b) { kids.push(board(b)); }); }
+    body.replaceChildren.apply(body, kids.map(function (k) { return h('div', { style: 'margin-bottom:14px' }, k); }));
+    labelCells();
+  }
+  if (!tid) { listT(); return; }
+  load();
+  timer = setInterval(function () { if (!busy && !document.hidden) load(); }, 60000);
+})();
+</script>
+</body>
+</html>

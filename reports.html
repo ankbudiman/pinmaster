@@ -153,6 +153,12 @@
             h('td', { class: 'lb-tot', text: t.off.played ? String(t.off.total) : '' }));
         })))));
   }
+  function labelCells() {
+    Array.prototype.forEach.call(document.querySelectorAll('table.pm-tbl'), function (t) {
+      var th = Array.prototype.map.call(t.querySelectorAll('thead th'), function (x) { return x.textContent; });
+      Array.prototype.forEach.call(t.querySelectorAll('tbody tr'), function (tr) { Array.prototype.forEach.call(tr.children, function (td, i) { if (th[i]) td.setAttribute('data-l', th[i]); }); });
+    });
+  }
   function paint() {
     var head = document.getElementById('head'), body = document.getElementById('body');
     head.setAttribute('aria-busy', String(!D || busy));
@@ -180,6 +186,7 @@
     kids.push(h('div', { class: 'rp-print rp-sign' }, h('div', { text: 'Chief marshal' }), h('div', { text: 'Tournament director' })));
     kids.push(h('div', { class: 'lb-wait', id: 'rpwait', text: 'Waiting for the rule sheet: handicap, tie-breaks, points, medals, stepladder, carry-over, Masters and All Events. Places here are plain pin totals; equal totals share a place.' }));
     body.replaceChildren.apply(body, kids.map(function (k) { return h('div', { style: 'margin-bottom:14px' }, k); }));
+    labelCells();
   }
   load();
 })();

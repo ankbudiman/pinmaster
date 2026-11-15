@@ -102,6 +102,12 @@
             h('td', null, h('span', { class: 'pm-tag' + (t[mode].played ? '' : ' pm-tag--off'), text: t[mode].played ? (mode === 'all' ? 'Provisional' : 'Locked scores only') : 'No score' })));
         })))) : h('p', { class: 'pm-help', text: 'No teams with entries yet.' }));
   }
+  function labelCells() {
+    Array.prototype.forEach.call(document.querySelectorAll('table.pm-tbl'), function (t) {
+      var th = Array.prototype.map.call(t.querySelectorAll('thead th'), function (x) { return x.textContent; });
+      Array.prototype.forEach.call(t.querySelectorAll('tbody tr'), function (tr) { Array.prototype.forEach.call(tr.children, function (td, i) { if (th[i]) td.setAttribute('data-l', th[i]); }); });
+    });
+  }
   function paint() {
     var head = document.getElementById('head'), body = document.getElementById('body');
     head.setAttribute('aria-busy', String(!D || busy));
@@ -127,6 +133,7 @@
     }
     kids.push(h('div', { class: 'lb-wait', id: 'lbwait', text: 'Waiting for the rule sheet: handicap, tie-breaks, points, medals, stepladder, carry-over, Masters and All Events. Places here are plain pin totals; equal totals share a place.' }));
     body.replaceChildren.apply(body, kids.map(function (k) { return h('div', { style: 'margin-bottom:14px' }, k); }));
+    labelCells();
   }
   load();
 })();
