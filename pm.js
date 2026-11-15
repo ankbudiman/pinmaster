@@ -119,7 +119,7 @@
   }
 
   // ---------- navigation: which page to open, and where the tournament id lives (the web address: ?t=) ----------
-  var PAGES = ['hub.html', 'tournament.html', 'setup.html', 'users.html', 'participants.html', 'lanes.html', 'scores.html', 'leaderboard.html', 'reports.html'];
+  var PAGES = ['hub.html', 'tournament.html', 'setup.html', 'users.html', 'participants.html', 'lanes.html', 'scores.html', 'leaderboard.html', 'reports.html', 'official.html'];
   var STATUS = { draft: 'Draft', regopen: 'Registration open', regclosed: 'Registration closed', live: 'Live', paused: 'Paused', ended: 'Ended' };
   function q(name) { try { return new URLSearchParams(location.search).get(name) || ''; } catch (e) { return ''; } }
   function here() { return (location.pathname.split('/').pop() || '') + location.search; }

@@ -174,6 +174,7 @@
         })),
         h('div', { class: 'lb-row' },
           h('button', { class: 'pm-btn', id: 'print', type: 'button', onClick: function () { window.print(); } }, 'Print sheet'),
+          h('a', { class: 'pm-btn', id: 'offl', href: PM.link('official.html', tid) }, 'Official result sheets (for signing)'),
           h('button', { class: 'pm-btn', id: 'csvcat', type: 'button', onClick: function () { download(fname(catName(cat).replace(/[^A-Za-z0-9]+/g, '_')), csvFor([cat])); } }, 'Download this category (Excel)'),
           h('button', { class: 'pm-btn', id: 'csvall', type: 'button', onClick: function () { download(fname('all'), csvFor(D.categories.map(function (c) { return c.category_id; }))); } }, 'Download all categories (Excel)'))) : h('p', { class: 'pm-help', text: 'No categories set up yet.' }));
     var kids = [];

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Official result sheets · Pin Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pm.css">
+<style>
+.lb-nav{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.lb-nav a{color:#C9D4E5;text-decoration:none;font-size:14px;font-weight:600}
+.lb-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.lb-chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;font:600 14px Inter,sans-serif;cursor:pointer;min-height:44px}
+.lb-chip[aria-pressed="true"]{background:#0B2A5B;color:#fff;border-color:#0B2A5B}
+.os-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.os-box{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.os-prev{height:72px;display:flex;align-items:center;justify-content:center;background:#F6F8FB;border-radius:8px;color:var(--ink3);font-size:13px}
+.os-prev img{max-height:64px;max-width:100%}
+.os-chk{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;min-height:32px}
+.os-chk input{width:18px;height:18px}
+.os-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.os-wrap{overflow-x:auto}
+/* ---- the printed sheets ---- */
+.os-sheet{background:#fff;color:#000;border:1px solid #B7C1D1;padding:16px 18px;margin:0 0 16px;font-family:Inter,Arial,sans-serif;font-size:11px;min-width:900px}
+.os-sheet.port{min-width:620px}
+.os-hd{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;margin-bottom:8px}
+.os-logos{display:flex;justify-content:space-evenly;align-items:center;width:100%;gap:12px;margin-bottom:4px}
+.os-logo{height:64px;max-width:150px;object-fit:contain}
+.os-org{font-weight:700;font-size:13px;text-transform:uppercase}
+.os-name{font-weight:700;font-size:15px;text-transform:uppercase;border-top:1.5px solid #000;border-bottom:1.5px solid #000;padding:3px 10px;width:100%}
+.os-sub{font-weight:600;font-size:12px;text-transform:uppercase}
+.os-title{margin:10px 0 6px;text-align:center;font-size:18px;font-weight:700;font-family:'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.5px}
+.os-flag{text-align:center;font-weight:700;font-size:12px;padding:3px 8px;margin:0 auto 6px;border:1.5px solid #000;width:fit-content}
+.os-flag.prov{background:#FFF1CF;border-style:dashed}
+.os-tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.os-tbl th,.os-tbl td{border:1px solid #444;padding:3px 5px;text-align:center}
+.os-tbl th{background:#E6EAF0;font-size:10px;text-transform:uppercase}
+.os-tbl td.l{text-align:left}
+.os-tbl td.b{font-weight:700}
+.os-tbl tr.r1 td{background:#F7E7A8}
+.os-tbl tr.r2 td{background:#E4E7EC}
+.os-tbl tr.r3 td{background:#EBD3BB}
+.os-tbl tr{break-inside:avoid}
+.os-tbl thead{display:table-header-group}
+.os-note{font-size:9.5px;margin-top:6px;color:#222}
+.os-sign{display:flex;gap:28px;margin-top:34px;break-inside:avoid}
+.os-sign div{flex:1;text-align:center;font-size:11px}
+.os-sign .ln{height:46px;border-bottom:1px solid #000;margin-bottom:4px}
+.os-sign b{display:block;min-height:14px}
+.os-foot{margin-top:10px;font-size:9px;color:#444;display:flex;justify-content:space-between}
+.os-med td,.os-med th{padding:2px 3px;font-size:10px}
+@page{size:A4 landscape;margin:8mm}
+@page port{size:A4 portrait;margin:10mm}
+@media print{
+  html,body{background:#fff}
+  .pm-top,#note,.noprint{display:none!important}
+  .pm-wrap{max-width:none;padding:0;margin:0}
+  .os-wrap{overflow:visible}
+  .os-sheet{border:0;padding:0;margin:0;min-width:0;break-after:page;page-break-after:always}
+  .os-sheet:last-child{break-after:auto;page-break-after:auto}
+  .os-sheet.port{page:port}
+}
+</style>
+</head>
+<body>
+<header class="pm-top">
+  <span class="pm-brand" style="font-size:22px">PIN MASTER</span>
+  <nav class="lb-nav" aria-label="Breadcrumb"><a id="dashl" href="tournament.html">&larr; Dashboard</a><a id="repl" href="reports.html">Reports</a></nav>
+  <span class="sp"></span>
+  <span id="who" style="font-size:14px;color:#C9D4E5"></span>
+  <button class="pm-btn" id="out" type="button">Sign out</button>
+</header>
+<main class="pm-wrap">
+  <div id="note" aria-live="polite"></div>
+  <section class="pm-card noprint" id="head" aria-busy="true"><p class="pm-help">Loading…</p></section>
+  <section class="pm-card noprint" id="hform"></section>
+  <section class="pm-card noprint" id="pick"></section>
+  <div class="os-wrap" id="sheets"></div>
+</main>
+<script src="config.js"></script>
+<script src="pm.js"></script>
+<script>
+(function () {
+  var PM = window.PM, h = PM.h;
+  var sess = PM.getSession();
+  if (!sess || !sess.user) { PM.goLogin(); return; }
+  var user = sess.user;
+  if (user.role !== 'admin') { location.replace('tournament.html'); return; }
+  var tid = PM.q('t') || PM.pref('tid') || '';
+  if (!tid) { location.replace('hub.html'); return; }
+  PM.pref('tid', tid);
+  document.getElementById('who').textContent = user.display_name || user.login_id;
+  document.getElementById('dashl').href = PM.link('tournament.html', tid);
+  document.getElementById('repl').href = PM.link('reports.html', tid);
+  document.getElementById('out').addEventListener('click', function () { PM.api('auth.logout').catch(function () {}).then(function () { PM.setSession(null); PM.goLogin(); }); });
+
+  var D = null, H = null, sel = {}, extra = { podium: true, medals: true, compact: false }, saving = false;
+  var TX = {
+    en: { rank: 'Rank', lane: 'Lane', no: 'No.', name: 'Name', team: 'Team', total: 'Total', avg: 'Avg', gap: 'Diff.', tteam: 'Team total',
+      winners: 'OFFICIAL WINNERS', medals: 'MEDAL STANDINGS', mh: ['G', 'S', 'B', '4'], pts: 'Points', tm: 'Total medals', prov: 'PROVISIONAL – NOT FOR SIGNING',
+      off: 'OFFICIAL RESULT', printed: 'Printed', of: 'entries fully locked',
+      none: 'No official result yet.', cur: 'events complete', sig: '(signature)', roll: 'TIE FOR A MEDAL PLACE – ROLL-OFF REQUIRED',
+      tbn: { best: 'higher best game', last: 'higher last game', last2: 'higher second-last game', first: 'higher first game' } },
+    ms: { rank: 'KDK', lane: 'LANE', no: 'NO PESERTA', name: 'NAMA', team: 'PASUKAN', total: 'JUMLAH', avg: 'PURATA', gap: 'DIFF.', tteam: 'JUMLAH PASUKAN',
+      winners: 'KEPUTUSAN PEMENANG', medals: 'KEDUDUKAN PINGAT SEMASA', mh: ['E', 'P', 'G', '4'], pts: 'JUMLAH MATA', tm: 'JUMLAH PINGAT', prov: 'SEMENTARA – JANGAN TANDATANGAN',
+      off: 'KEPUTUSAN RASMI', printed: 'Dicetak', of: 'penyertaan dikunci sepenuhnya',
+      none: 'Belum ada keputusan rasmi.', cur: 'acara selesai', sig: '(tandatangan)', roll: 'SERI DI KEDUDUKAN PINGAT – PERLU ROLL-OFF',
+      tbn: { best: 'permainan terbaik lebih tinggi', last: 'permainan terakhir lebih tinggi', last2: 'permainan kedua terakhir lebih tinggi', first: 'permainan pertama lebih tinggi' } }
+  };
+  function T() { return TX[(H && H.lang) === 'ms' ? 'ms' : 'en']; }
+  function cbNote() {
+    var L = T(), tb = D.rules.tb.map(function (x) { return L.tbn[x]; }), ms = H.lang === 'ms';
+    return (ms ? 'KDK: jumlah pin tertinggi. ' : 'Rank: highest total pins. ') + (tb.length ? (ms ? 'Jumlah sama ditentukan oleh: ' : 'Equal totals are decided by: ') + tb.join(ms ? ', kemudian ' : ', then ') + '. ' : '') +
+      (ms ? 'Baris yang masih sama berkongsi KDK.' : 'Rows still level share the rank.');
+  }
+  function ptsNote() {
+    var R = D.rules, ms = H.lang === 'ms', M = D.medals;
+    if (!R.pts) return '';
+    var sc = R.scale.map(function (v, i) { return (i + 1) + ': ' + v; }).join(', ');
+    var mu = D.events.filter(function (e) { return M.mult[e.event_key] !== undefined && M.mult[e.event_key] !== 1; }).map(function (e) { return e.name + ' ×' + M.mult[e.event_key]; });
+    return (ms ? 'Mata mengikut tempat – ' : 'Points by place – ') + sc + (mu.length ? (ms ? '. Pengganda: ' : '. Multipliers: ') + mu.join(', ') : '') + '. ' +
+      (R.teamRule === 'medals' ? (ms ? 'Pasukan disusun mengikut pingat dahulu, kemudian mata.' : 'Teams rank by medals first, then points.') : (ms ? 'Pasukan disusun mengikut mata dahulu, kemudian pingat.' : 'Teams rank by points first, then medals.'));
+  }
+  function key(bd) { return bd.category_id + '|' + bd.event_key; }
+  function note(msg, ok) { var n = document.getElementById('note'); if (msg) n.replaceChildren(h('div', { class: 'pm-msg ' + (ok ? 'pm-msg--ok' : 'pm-msg--err'), role: ok ? 'status' : 'alert' }, msg)); else n.replaceChildren(); }
+
+  function load() {
+    PM.api('results.load', { tournament_id: tid }).then(function (d) {
+      D = d; H = JSON.parse(JSON.stringify(d.header));
+      d.boards.forEach(function (b) { if (sel[key(b)] === undefined) sel[key(b)] = true; });
+      extra.compact = d.medals.boards.length > 8;
+      buildHead(); buildForm(); buildPick(); paintSheets();
+    }, function (e) {
+      if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return; }
+      note((e && e.message) || 'Could not load.');
+    });
+  }
+
+  // ---------- pieces of every sheet ----------
+  function dateText() { return H.date_text || (D.tournament.start_date ? PM.fmtDates(D.tournament.start_date, D.tournament.end_date) : ''); }
+  function headerEl() {
+    var s = H.show, t = D.tournament;
+    var logos = H.logos.map(function (l, i) { return l && s['logo' + i] ? h('img', { class: 'os-logo', src: l, alt: 'Logo ' + (i + 1) }) : null; }).filter(Boolean);
+    var org = s.org ? H.org.filter(Boolean).map(function (x) { return h('div', { class: 'os-org', text: x }); }) : [];
+    var name = s.name ? (H.name_text || t.name) : '', venue = s.venue ? (H.venue_text || t.venue || '') : '', date = s.date ? dateText() : '';
+    return h('div', { class: 'os-hd' }, logos.length ? h('div', { class: 'os-logos' }, logos) : null, org,
+      name ? h('div', { class: 'os-name', text: name }) : null, venue ? h('div', { class: 'os-sub', text: venue }) : null, date ? h('div', { class: 'os-sub', text: date }) : null);
+  }
+  function signEl() {
+    var sg = H.sign.filter(function (x) { return x.title || x.name; });
+    if (!H.show.sign || !sg.length) return null;
+    return h('div', { class: 'os-sign' }, sg.map(function (x) { return h('div', null, h('div', { class: 'ln' }), h('b', { text: x.name || '' }), h('span', { text: x.title || T().sig })); }));
+  }
+  function sheet(port, title, flag, body, extraNote) {
+    return h('section', { class: 'os-sheet' + (port ? ' port' : '') }, headerEl(), h('h2', { class: 'os-title', text: title }), flag, body,
+      extraNote ? h('div', { class: 'os-note', text: extraNote }) : null, signEl(),
+      h('div', { class: 'os-foot' }, h('span', { text: T().printed + ' ' + new Date().toLocaleString() }), h('span', { text: 'Pin Master' })));
+  }
+  function counts(bd) { return { n: bd.rows.length, d: bd.rows.filter(function (r) { return bd.games > 0 && r.off.played === bd.games; }).length }; }
+  function flagEl(c, what, roll) {
+    var ok = c.n > 0 && c.d === c.n && !roll;
+    return h('div', { class: 'os-flag' + (ok ? '' : ' prov') }, (ok ? T().off : (roll ? T().roll : T().prov)) + ' · ' + c.d + ' / ' + c.n + ' ' + (what || T().of));
+  }
+  function rkOf(x) { return x.rank ? x.rank : ''; }
+  function cls(x) { return x.rank >= 1 && x.rank <= 3 ? 'r' + x.rank : ''; }
+  function g(x) { return x.locked && x.pins != null ? x.pins : ''; }
+  function mean(o) { return o.played ? Math.round(o.total / o.played) : ''; }
+
+  // ---------- one event ----------
+  function eventSheet(bd) {
+    var G = bd.games, L = T(), grouped = bd.rows.some(function (r) { return r.members; });
+    var rows = bd.rows.slice().sort(function (a, b) {
+      var ra = a.off.rank || 9999, rb = b.off.rank || 9999;
+      return ra - rb || (a.lane + '').localeCompare(b.lane + '', undefined, { numeric: true });
+    });
+    var gh = []; for (var i = 1; i <= G; i++) gh.push('G' + i);
+    var ths = grouped ? [L.lane, L.no, L.name, L.team].concat(gh, [L.total, L.avg, L.tteam, L.rank, L.gap]) : [L.rank, L.lane, L.no, L.name, L.team].concat(gh, [L.total, L.avg, L.gap]);
+    var trs = [];
+    rows.forEach(function (r) {
+      var x = r.off, gap = x.played ? (x.rank > 1 ? '-' + x.gap : '0') : '';
+      if (grouped && r.members) {
+        r.members.forEach(function (m, i) {
+          var tds = [];
+          if (i === 0) tds.push(h('td', { rowspan: r.members.length, text: r.lane }));
+          tds.push(h('td', { text: m.code }), h('td', { class: 'l', text: m.name }), h('td', { class: 'l', text: r.team }));
+          m.games.forEach(function (q) { tds.push(h('td', { text: g(q) })); });
+          tds.push(h('td', { class: 'b', text: m.off.played ? m.off.total : '' }), h('td', { text: mean(m.off) }));
+          if (i === 0) tds.push(h('td', { class: 'b', rowspan: r.members.length, text: x.played ? x.total : '' }), h('td', { class: 'b', rowspan: r.members.length, text: rkOf(x) }), h('td', { rowspan: r.members.length, text: gap }));
+          trs.push(h('tr', { class: cls(x) }, tds));
+        });
+      } else {
+        var tds = grouped ? [h('td', { text: r.lane }), h('td', { text: r.code }), h('td', { class: 'l', text: r.name }), h('td', { class: 'l', text: r.team })]
+          : [h('td', { class: 'b', text: rkOf(x) }), h('td', { text: r.lane }), h('td', { text: r.code }), h('td', { class: 'l', text: r.name || ('Team ' + r.entry_no) }), h('td', { class: 'l', text: r.team })];
+        r.games.forEach(function (q) { tds.push(h('td', { text: g(q) })); });
+        tds.push(h('td', { class: 'b', text: x.played ? x.total : '' }), h('td', { text: mean(x) }));
+        if (grouped) tds.push(h('td', { class: 'b', text: x.played ? x.total : '' }), h('td', { class: 'b', text: rkOf(x) }));
+        tds.push(h('td', { text: gap }));
+        trs.push(h('tr', { class: cls(x) }, tds));
+      }
+    });
+    var tbl = h('table', { class: 'os-tbl' }, h('thead', null, h('tr', null, ths.map(function (t) { return h('th', { text: t }); }))), h('tbody', null, trs));
+    return sheet(false, (bd.event + ' · ' + bd.category).toUpperCase(), flagEl(counts(bd), null, bd.roll), tbl, cbNote());
+  }
+
+  // ---------- podium (top 4 of each selected event) ----------
+  function podiumSheet(boards) {
+    var L = T(), all = boards.map(counts), n = all.reduce(function (a, c) { return a + c.n; }, 0), d = all.reduce(function (a, c) { return a + c.d; }, 0);
+    var kids = [];
+    boards.forEach(function (bd) {
+      var top = bd.rows.filter(function (r) { return r.off.rank >= 1 && r.off.rank <= 4; }).sort(function (a, b) { return a.off.rank - b.off.rank; });
+      var c = counts(bd);
+      kids.push(h('div', { style: 'font-weight:700;font-size:12px;margin:12px 0 4px;text-transform:uppercase', text: bd.event + ' · ' + bd.category + (c.n && c.d === c.n ? '' : '  (' + L.prov.split(' – ')[0] + ')') }));
+      if (!top.length) { kids.push(h('div', { class: 'os-note', text: L.none })); return; }
+      kids.push(h('table', { class: 'os-tbl' }, h('thead', null, h('tr', null, [L.rank, L.no, L.name, L.team, L.total].map(function (t) { return h('th', { text: t }); }))),
+        h('tbody', null, top.map(function (r) {
+          var names = r.members ? r.members.map(function (m) { return h('div', { text: m.name }); }) : [h('div', { text: r.name })];
+          var codes = r.members ? r.members.map(function (m) { return h('div', { text: m.code }); }) : [h('div', { text: r.code })];
+          return h('tr', { class: cls(r.off) }, h('td', { class: 'b', text: r.off.rank }), h('td', null, codes), h('td', { class: 'l' }, names), h('td', { class: 'l', text: r.team }), h('td', { class: 'b', text: r.off.total }));
+        }))));
+    });
+    return sheet(true, L.winners, flagEl({ n: n, d: d }, null, boards.some(function (b) { return b.roll; })), h('div', null, kids), cbNote());
+  }
+
+  // ---------- medal table ----------
+  function medalSheet() {
+    var L = T(), M = D.medals, bs = M.boards, done = bs.filter(function (b) { return b.entries > 0 && b.complete === b.entries && !b.roll; }).length;
+    var compact = extra.compact, mh = L.mh.slice(0, M.cols), rs = compact ? 1 : 2;
+    var h1 = [h('th', { rowspan: rs, text: L.rank }), h('th', { rowspan: rs, text: L.team })], h2 = [];
+    if (compact) mh.forEach(function (x) { h1.push(h('th', { text: x })); });
+    else {
+      bs.forEach(function (b) { h1.push(h('th', { colspan: M.cols, text: b.event + ' ' + b.category })); mh.forEach(function (x) { h2.push(h('th', { text: x })); }); });
+      h1.push(h('th', { colspan: M.cols, text: L.tm })); mh.forEach(function (x) { h2.push(h('th', { text: x })); });
+    }
+    if (M.pts) h1.push(h('th', { rowspan: rs, text: L.pts }));
+    var trs = M.teams.map(function (t) {
+      var tds = [h('td', { class: 'b', text: t.rank }), h('td', { class: 'l b', text: t.team })];
+      if (!compact) bs.forEach(function (b) { var v = t.by_board[b.key] || mh.map(function () { return 0; }); v.forEach(function (n) { tds.push(h('td', { text: n })); }); });
+      t.tot.forEach(function (n) { tds.push(h('td', { class: 'b', text: n })); });
+      if (M.pts) tds.push(h('td', { class: 'b', text: t.points }));
+      return h('tr', { class: cls({ rank: (t.points || t.tot.some(function (n) { return n; })) ? t.rank : 0 }) }, tds);
+    });
+    var tbl = h('table', { class: 'os-tbl os-med' }, h('thead', null, h('tr', null, h1), compact ? null : h('tr', null, h2)), h('tbody', null, trs));
+    var ok = bs.length && done === bs.length;
+    var flag = h('div', { class: 'os-flag' + (ok ? '' : ' prov') }, (ok ? L.off : (bs.some(function (b) { return b.roll; }) ? L.roll : L.prov)) + ' · ' + done + ' / ' + bs.length + ' ' + L.cur);
+    return sheet(false, L.medals, flag, tbl, ptsNote());
+  }
+
+  function paintSheets() {
+    var out = [], bs = D.boards.filter(function (b) { return sel[key(b)]; });
+    bs.forEach(function (b) { out.push(eventSheet(b)); });
+    if (extra.podium && bs.length) out.push(podiumSheet(bs));
+    if (extra.medals && D.medals.boards.length) out.push(medalSheet());
+    if (!out.length) out.push(h('p', { class: 'pm-help noprint', text: 'Pick at least one event above to see its sheet.' }));
+    document.getElementById('sheets').replaceChildren.apply(document.getElementById('sheets'), out);
+  }
+
+  // ---------- top card and picker ----------
+  function buildHead() {
+    var t = D.tournament, all = D.boards.reduce(function (a, b) { var c = counts(b); return [a[0] + c.d, a[1] + c.n]; }, [0, 0]);
+    var head = document.getElementById('head'); head.setAttribute('aria-busy', 'false');
+    head.replaceChildren(h('div', { class: 'lb-row' }, h('h1', { class: 'pm-h', style: 'font-size:34px', text: 'Official result sheets' }),
+      h('button', { class: 'pm-btn pm-btn--sm', id: 'refresh', type: 'button', onClick: load }, 'Refresh')),
+      h('p', { class: 'pm-help', style: 'margin:6px 0 0', text: t.name + ' · ' + all[0] + ' of ' + all[1] + ' entries fully locked. Only locked scores are official. A sheet marked PROVISIONAL must not be signed.' }));
+  }
+  function chk(label, on, fn, id) {
+    return h('label', { class: 'os-chk' }, h('input', { type: 'checkbox', id: id, checked: on ? 'checked' : null, onChange: function (e) { fn(e.target.checked); } }), h('span', { text: label }));
+  }
+  function txt(label, val, ph, fn, id, max) {
+    return h('div', null, h('label', { class: 'pm-lbl', for: id, text: label }), h('input', { class: 'pm-in', id: id, type: 'text', maxlength: max || 120, value: val || '', placeholder: ph || '', onInput: function (e) { fn(e.target.value); paintSheets(); } }));
+  }
+  function shrink(file, cb) {
+    var rd = new FileReader();
+    rd.onerror = function () { cb(null); };
+    rd.onload = function () {
+      var img = new Image();
+      img.onerror = function () { cb(null); };
+      img.onload = function () {
+        var tries = [['png', 160], ['png', 120], ['png', 96], ['jpeg', 160], ['jpeg', 120], ['jpeg', 96], ['jpeg', 72]];
+        for (var i = 0; i < tries.length; i++) {
+          var sc = Math.min(1, tries[i][1] / Math.max(img.width, img.height)), c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(img.width * sc)); c.height = Math.max(1, Math.round(img.height * sc));
+          var x = c.getContext('2d');
+          if (tries[i][0] === 'jpeg') { x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); }
+          x.drawImage(img, 0, 0, c.width, c.height);
+          var url = c.toDataURL('image/' + tries[i][0], 0.85);
+          if (url.length <= 13500) return cb(url);
+        }
+        cb(null);
+      };
+      img.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  }
+  function buildForm() {
+    var f = document.getElementById('hform'), lg = [];
+    [0, 1, 2].forEach(function (i) {
+      var prev = h('div', { class: 'os-prev' }), refresh = function () { prev.replaceChildren(H.logos[i] ? h('img', { src: H.logos[i], alt: 'Logo ' + (i + 1) }) : 'No logo'); };
+      refresh();
+      lg.push(h('div', { class: 'os-box' }, h('b', { text: 'Logo ' + (i + 1) }), prev,
+        h('input', { type: 'file', accept: 'image/*', 'aria-label': 'Choose logo ' + (i + 1), id: 'logo' + i, onChange: function (e) {
+          var file = e.target.files && e.target.files[0]; if (!file) return;
+          shrink(file, function (url) { if (!url) { note('That image could not be used. Try a smaller PNG or JPEG.'); return; } note(''); H.logos[i] = url; refresh(); paintSheets(); });
+        } }),
+        h('div', { class: 'lb-row' }, h('button', { class: 'pm-btn pm-btn--sm', type: 'button', onClick: function () { H.logos[i] = ''; refresh(); paintSheets(); } }, 'Remove'),
+          chk('Show', H.show['logo' + i], function (v) { H.show['logo' + i] = v; paintSheets(); }, 'showlogo' + i))));
+    });
+    var sg = [0, 1, 2, 3].map(function (i) {
+      H.sign[i] = H.sign[i] || { title: '', name: '' };
+      return h('div', { class: 'os-two' }, txt('Signature ' + (i + 1) + ' title', H.sign[i].title, 'e.g. Head Referee', function (v) { H.sign[i].title = v; }, 'st' + i, 40),
+        txt('Name (optional)', H.sign[i].name, '', function (v) { H.sign[i].name = v; }, 'sn' + i, 60));
+    });
+    f.replaceChildren.apply(f, [h('h2', { class: 'pm-h', style: 'font-size:24px', text: 'Sheet header and signatures' }),
+      h('p', { class: 'pm-help', text: 'Tick what should appear. The sheet re-arranges itself. Logos are shrunk automatically.' }),
+      h('div', { class: 'os-grid' }, lg),
+      h('div', { class: 'os-grid' }, chk('Organiser lines', H.show.org, function (v) { H.show.org = v; paintSheets(); }, 'showorg'),
+        chk('Tournament name', H.show.name, function (v) { H.show.name = v; paintSheets(); }, 'showname'),
+        chk('Venue', H.show.venue, function (v) { H.show.venue = v; paintSheets(); }, 'showvenue'),
+        chk('Date', H.show.date, function (v) { H.show.date = v; paintSheets(); }, 'showdate'),
+        chk('Signature lines', H.show.sign, function (v) { H.show.sign = v; paintSheets(); }, 'showsign')),
+      h('div', { class: 'os-two' }, txt('Organiser line 1', H.org[0], 'e.g. the organiser name', function (v) { H.org[0] = v; }, 'org0'), txt('Organiser line 2', H.org[1], '', function (v) { H.org[1] = v; }, 'org1')),
+      h('div', { class: 'os-grid' }, txt('Tournament name (blank = from Setup)', H.name_text, D.tournament.name, function (v) { H.name_text = v; }, 'nt', 160),
+        txt('Venue (blank = from Setup)', H.venue_text, D.tournament.venue || '', function (v) { H.venue_text = v; }, 'vt', 160),
+        txt('Date (blank = from Setup)', H.date_text, D.tournament.start_date ? PM.fmtDates(D.tournament.start_date, D.tournament.end_date) : '', function (v) { H.date_text = v; }, 'dt', 60),
+        h('div', null, h('label', { class: 'pm-lbl', for: 'lang', text: 'Language of the sheet labels' }),
+          h('select', { class: 'pm-sel', id: 'lang', onChange: function (e) { H.lang = e.target.value; paintSheets(); } },
+            h('option', { value: 'en', selected: H.lang === 'ms' ? null : 'selected' }, 'English'), h('option', { value: 'ms', selected: H.lang === 'ms' ? 'selected' : null }, 'Bahasa Malaysia')))),
+      h('div', { style: 'display:flex;flex-direction:column;gap:8px' }, sg),
+      h('div', { class: 'lb-row' }, h('button', { class: 'pm-btn', id: 'savehdr', type: 'button', onClick: save }, 'Save header'),
+        h('span', { class: 'pm-help', text: 'Saved for this tournament. Print works without saving, but saving keeps it for next time.' }))]);
+  }
+  function save() {
+    if (saving) return; saving = true;
+    PM.api('header.save', { tournament_id: tid, header: H }).then(function (r) { saving = false; D.header = r; note('Header saved.', true); }, function (e) { saving = false; note((e && e.message) || 'Could not save.'); });
+  }
+  function buildPick() {
+    var p = document.getElementById('pick'), kids = [];
+    D.categories.forEach(function (c) {
+      var bs = D.boards.filter(function (b) { return b.category_id === c.category_id; });
+      if (!bs.length) return;
+      kids.push(h('div', null, h('b', { style: 'font-size:14px', text: c.name }),
+        h('div', { class: 'lb-row', style: 'margin-top:6px' }, bs.map(function (b) {
+          var k = counts(b), ok = k.n && k.d === k.n;
+          return h('button', { class: 'lb-chip', type: 'button', 'data-k': key(b), 'aria-pressed': String(!!sel[key(b)]), onClick: function (e) { sel[key(b)] = !sel[key(b)]; e.currentTarget.setAttribute('aria-pressed', String(!!sel[key(b)])); paintSheets(); } },
+            b.event + ' · ' + k.d + '/' + k.n + (ok ? ' ✓' : ''));
+        }))));
+    });
+    var tg = function (label, k) { return h('button', { class: 'lb-chip', type: 'button', id: 'x-' + k, 'aria-pressed': String(!!extra[k]), onClick: function (e) { extra[k] = !extra[k]; e.currentTarget.setAttribute('aria-pressed', String(!!extra[k])); paintSheets(); } }, label); };
+    p.replaceChildren.apply(p, [h('h2', { class: 'pm-h', style: 'font-size:24px', text: 'What to print' })].concat(kids, [
+      h('div', { class: 'lb-row' }, tg('Podium (top 4)', 'podium'), tg('Medal table', 'medals'), tg('Medal table: totals only', 'compact'),
+        h('button', { class: 'pm-btn pm-btn--sm', type: 'button', id: 'selall', onClick: function () { D.boards.forEach(function (b) { sel[key(b)] = true; }); buildPick(); paintSheets(); } }, 'Select all'),
+        h('button', { class: 'pm-btn pm-btn--sm', type: 'button', id: 'selnone', onClick: function () { D.boards.forEach(function (b) { sel[key(b)] = false; }); buildPick(); paintSheets(); } }, 'Select none')),
+      h('div', { class: 'lb-row' }, h('button', { class: 'pm-btn', id: 'print', type: 'button', onClick: function () { window.print(); } }, 'Print / Save as PDF'),
+        h('span', { class: 'pm-help', text: 'In the print window choose A4, and switch off "Headers and footers". Choose "Save as PDF" to keep a copy. Each sheet starts on a new page.' }))]));
+  }
+  load();
+})();
+</script>
+</body>
+</html>
