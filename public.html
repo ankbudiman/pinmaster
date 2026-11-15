@@ -49,9 +49,9 @@
       }) : [h('p', { class: 'pm-help', text: 'No tournaments to show yet.' })]);
     }, err);
   }
-  function load() {
+  function load(quiet) {
     busy = true; paint();
-    PM.api('public.results', { tournament_id: tid }).then(function (d) {
+    PM.api('public.results', { tournament_id: tid }, { quiet: quiet === true }).then(function (d) {
       D = d; busy = false;
       document.getElementById('note').replaceChildren();
       if (!cat || !d.categories.some(function (c) { return c.category_id === cat; })) cat = d.categories.length ? d.categories[0].category_id : '';
@@ -118,7 +118,7 @@
   }
   if (!tid) { listT(); return; }
   load();
-  timer = setInterval(function () { if (!busy && !document.hidden) load(); }, 60000);
+  timer = setInterval(function () { if (!busy && !document.hidden) load(true); }, 60000);
 })();
 </script>
 </body>

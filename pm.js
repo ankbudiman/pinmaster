@@ -21,8 +21,40 @@
     return null;
   }
 
+  // Loading overlay: shown when a call takes longer than 0.4 s, so quick calls do not flicker.
+  // Pass {quiet: true} for background work (auto refresh, score sync) that must not block the screen.
+  var busyN = 0, busyTimer = null, slowTimer = null, ov = null;
+  function overlayOn() {
+    if (!document.body) return;
+    if (!document.getElementById('pm-ov-css')) {
+      var st = document.createElement('style'); st.id = 'pm-ov-css';
+      st.textContent = '#pm-ov{position:fixed;inset:0;z-index:9999;background:rgba(11,42,91,.45);display:flex;align-items:center;justify-content:center;padding:16px}' +
+        '#pm-ov .b{background:#fff;color:#0B1B33;border-radius:14px;padding:22px 26px;max-width:340px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.3);font:600 16px Inter,Arial,sans-serif}' +
+        '#pm-ov .sp{width:38px;height:38px;border:4px solid #D9E0EC;border-top-color:#F2A93B;border-radius:50%;margin:0 auto 12px;animation:pmspin .8s linear infinite}' +
+        '#pm-ov .s{font:400 14px Inter,Arial,sans-serif;color:#4A5B78;margin-top:6px;min-height:20px}' +
+        '@keyframes pmspin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){#pm-ov .sp{animation:none}}';
+      document.head.appendChild(st);
+    }
+    ov = document.createElement('div'); ov.id = 'pm-ov'; ov.setAttribute('role', 'status'); ov.setAttribute('aria-live', 'polite');
+    ov.innerHTML = '<div class="b"><div class="sp" aria-hidden="true"></div><div>Working…</div><div class="s"></div></div>';
+    document.body.appendChild(ov);
+    slowTimer = setTimeout(function () { var m = ov && ov.querySelector('.s'); if (m) m.textContent = 'Still working. The server is slow, please wait and do not close this page.'; }, 6000);
+  }
+  function overlayOff() {
+    clearTimeout(busyTimer); clearTimeout(slowTimer); busyTimer = null;
+    if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    ov = null;
+  }
+  function busyStart() { busyN++; if (busyN === 1) busyTimer = setTimeout(overlayOn, 400); }
+  function busyEnd() { busyN = Math.max(0, busyN - 1); if (busyN === 0) overlayOff(); }
+
   // One call to the script. Resolves with data; rejects with {code, message}.
   async function api(action, params, opts) {
+    var quiet = !!(opts && opts.quiet);
+    if (!quiet) busyStart();
+    try { return await apiCall(action, params, opts); } finally { if (!quiet) busyEnd(); }
+  }
+  async function apiCall(action, params, opts) {
     var sess = getSession();
     var res;
     try {

@@ -97,7 +97,7 @@
 
   // ---------- server ----------
   function load(quiet) {
-    return PM.api('scores.load', { tournament_id: tid }).then(function (d) {
+    return PM.api('scores.load', { tournament_id: tid }, { quiet: !!D }).then(function (d) {
       D = d; index(); document.title = (d.tournament.name || 'Tournament') + ' · Score Entry';
       if (!blockId || !D.blocks.some(function (b) { return b.block_id === blockId; })) { blockId = D.blocks.length ? D.blocks[0].block_id : ''; game = 1; }
       offline = false; paint();
@@ -111,7 +111,7 @@
     if (flushing || !queue.length) return Promise.resolve();
     flushing = true;
     var batch = queue.slice(0, 50);
-    return PM.api('scores.save', { tournament_id: tid, rows: batch }).then(function (r) {
+    return PM.api('scores.save', { tournament_id: tid, rows: batch }, { quiet: true }).then(function (r) {
       var errs = [];
       r.results.forEach(function (x, i) { if (x.status === 'error') errs.push(batch[i].lane_label + ': ' + x.error); });
       queue = queue.slice(batch.length); saveQueue(); flushing = false; offline = false;
