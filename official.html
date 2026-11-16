@@ -200,7 +200,7 @@
       }
     });
     var tbl = h('table', { class: 'os-tbl' }, h('thead', null, h('tr', null, ths.map(function (t) { return h('th', { text: t }); }))), h('tbody', null, trs));
-    return sheet(false, (bd.event + ' · ' + bd.category).toUpperCase(), flagEl(counts(bd), null, bd.roll), tbl, cbNote());
+    return sheet(false, (bd.event + ' · ' + bd.category).toUpperCase(), flagEl(counts(bd), null, bd.roll), tbl, (bd.from_event ? (H.lang === 'ms' ? 'Skor diambil daripada permainan ' + bd.from_event + '. ' : 'Scores taken from the ' + bd.from_event + ' games. ') : '') + cbNote());
   }
 
   // ---------- podium (top 4 of each selected event) ----------

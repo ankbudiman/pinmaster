@@ -1395,7 +1395,8 @@ class Component extends DCLogic {
           { k: 'ev', label: 'Events on', val: evs.length ? evs.join(', ') : 'None', risky: false },
           { k: 'games', label: 'Games per event', val: gamesText, risky: true },
           { k: 'tev', label: 'Team events', val: teamText, risky: true },
-          { k: 'allIn', label: 'All Events counts', val: allText, risky: true }
+          { k: 'allIn', label: 'All Events counts', val: allText, risky: true },
+          { k: 'from', label: 'Singles scores', val: c.from && c.from.s === 'd' ? 'Taken from the Doubles games (no Singles block)' : 'Own games', risky: true }
         ] },
         { title: 'SCORING AND TIES', rows: [
           { k: 'rank', label: 'Ranking', val: c.handicap ? 'Handicap: ' + c.hcPct + '% of ' + c.hcBase : 'Scratch pinfall', risky: true },
@@ -1471,6 +1472,10 @@ class Component extends DCLogic {
       const evHelp = { s: 'Individual games.', d: 'Pairs of two bowlers from the same team.', a: 'Ranks each bowler on the events ticked under All Events counts.', m: 'Final round for the top qualifiers of All Events.' };
       rBlocks = [{ title: 'Events', note: 'Turn on only the events this tournament plays. Every category plays them. Team events (Trios, Group of 4 and so on) are set up in the next section. All Events needs Singles and Doubles. Masters needs All Events. Switching one on turns on what it needs.', fields: ['s', 'd', 'a', 'm'].map((k) => field(EVN[k], evHelp[k], onOff(cfg.ev[k], (on) => toggleEv(k, on)), false)) },
         { title: 'All Events counts', note: 'Tick the events whose games are added into each bowler\'s All Events total. A Baker event gives one score to the whole team, which cannot be split between bowlers, so it is left out even if ticked.', fields: ['s', 'd'].concat(tevKeys).map((k) => { const td = tevOf(k); return field(EVN[k], td && td.baker ? 'Baker: left out of All Events.' : (k === 's' || k === 'd' ? '' : 'Each bowler\'s own scores count.'), onOff(!!(cfg.allIn && cfg.allIn[k]), (on) => updIn('allIn', k, on)), true); }) }];
+      if (cfg.ev.s && cfg.ev.d) rBlocks.splice(1, 0, { title: 'Singles scores', note: 'Some tournaments save time by not bowling Singles at all. Choose where the Singles result comes from.', fields: [
+        field('Singles scores come from', 'Doubles games: every bowler\'s own games in the Doubles block also count as Singles. Singles then needs no block in the Schedule and no lane draw. Only bowlers entered in Singles are ranked there. Ranks, points and medals follow the same rules as any event.',
+          optChips((cfg.from && cfg.from.s) || '', [['', 'Its own games'], ['d', 'Doubles games']], (v) => updCfg({ from: Object.assign({}, cfg.from || {}, { s: v }) })), true)
+      ] });
     } else if (tab === 'points') {
       const f = [field('Use points', 'Points feed the team standings. Off shows ranks and medals only.', onOff(cfg.pts, (on) => updCfg({ pts: on })), true),
         field('Medal places', 'How many places receive a medal in every category and event.', optChips(cfg.medals, [[1, 'Top 1'], [2, 'Top 2'], [3, 'Top 3']], (v) => updCfg({ medals: v })), true)];
