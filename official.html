@@ -75,6 +75,7 @@
   <div id="note" aria-live="polite"></div>
   <section class="pm-card noprint" id="head" aria-busy="true"><p class="pm-help">Loading…</p></section>
   <section class="pm-card noprint" id="hform"></section>
+  <section class="pm-card noprint" id="ties" style="display:none"></section>
   <section class="pm-card noprint" id="pick"></section>
   <div class="os-wrap" id="sheets"></div>
 </main>
@@ -100,12 +101,12 @@
     en: { rank: 'Rank', lane: 'Lane', no: 'No.', name: 'Name', team: 'Team', total: 'Total', avg: 'Avg', gap: 'Diff.', tteam: 'Team total',
       winners: 'OFFICIAL WINNERS', medals: 'MEDAL STANDINGS', mh: ['G', 'S', 'B', '4'], pts: 'Points', tm: 'Total medals', prov: 'PROVISIONAL – NOT FOR SIGNING',
       off: 'OFFICIAL RESULT', printed: 'Printed', of: 'entries fully locked',
-      none: 'No official result yet.', cur: 'events complete', sig: '(signature)', roll: 'TIE FOR A MEDAL PLACE – ROLL-OFF REQUIRED',
+      none: 'No official result yet.', cur: 'events complete', sig: '(signature)', roll: 'TIE FOR A MEDAL PLACE – ROLL-OFF REQUIRED', hc: 'HANDICAP IS ON IN SETUP BUT NOT APPLIED – SCRATCH RESULTS ONLY', ro: '* Place decided by roll-off.',
       tbn: { best: 'higher best game', last: 'higher last game', last2: 'higher second-last game', first: 'higher first game' } },
     ms: { rank: 'KDK', lane: 'LANE', no: 'NO PESERTA', name: 'NAMA', team: 'PASUKAN', total: 'JUMLAH', avg: 'PURATA', gap: 'DIFF.', tteam: 'JUMLAH PASUKAN',
       winners: 'KEPUTUSAN PEMENANG', medals: 'KEDUDUKAN PINGAT SEMASA', mh: ['E', 'P', 'G', '4'], pts: 'JUMLAH MATA', tm: 'JUMLAH PINGAT', prov: 'SEMENTARA – JANGAN TANDATANGAN',
       off: 'KEPUTUSAN RASMI', printed: 'Dicetak', of: 'penyertaan dikunci sepenuhnya',
-      none: 'Belum ada keputusan rasmi.', cur: 'acara selesai', sig: '(tandatangan)', roll: 'SERI DI KEDUDUKAN PINGAT – PERLU ROLL-OFF',
+      none: 'Belum ada keputusan rasmi.', cur: 'acara selesai', sig: '(tandatangan)', roll: 'SERI DI KEDUDUKAN PINGAT – PERLU ROLL-OFF', hc: 'HANDIKAP DIAKTIFKAN TETAPI BELUM DIGUNAKAN – KEPUTUSAN SCRATCH SAHAJA', ro: '* Tempat ditentukan oleh roll-off.',
       tbn: { best: 'permainan terbaik lebih tinggi', last: 'permainan terakhir lebih tinggi', last2: 'permainan kedua terakhir lebih tinggi', first: 'permainan pertama lebih tinggi' } }
   };
   function T() { return TX[(H && H.lang) === 'ms' ? 'ms' : 'en']; }
@@ -130,7 +131,7 @@
       D = d; H = JSON.parse(JSON.stringify(d.header));
       d.boards.forEach(function (b) { if (sel[key(b)] === undefined) sel[key(b)] = true; });
       extra.compact = d.medals.boards.length > 8;
-      buildHead(); buildForm(); buildPick(); paintSheets();
+      buildHead(); buildForm(); buildTies(); buildPick(); paintSheets();
     }, function (e) {
       if (e && (e.code === 'auth' || e.code === 'must_change_pin')) { PM.goLogin(true); return; }
       note((e && e.message) || 'Could not load.');
@@ -159,10 +160,10 @@
   }
   function counts(bd) { return { n: bd.rows.length, d: bd.rows.filter(function (r) { return bd.games > 0 && r.off.played === bd.games; }).length }; }
   function flagEl(c, what, roll) {
-    var ok = c.n > 0 && c.d === c.n && !roll;
-    return h('div', { class: 'os-flag' + (ok ? '' : ' prov') }, (ok ? T().off : (roll ? T().roll : T().prov)) + ' · ' + c.d + ' / ' + c.n + ' ' + (what || T().of));
+    var hc = D.rules.handicap, ok = c.n > 0 && c.d === c.n && !roll && !hc;
+    return h('div', { class: 'os-flag' + (ok ? '' : ' prov') }, (ok ? T().off : (hc ? T().hc : (roll ? T().roll : T().prov))) + ' · ' + c.d + ' / ' + c.n + ' ' + (what || T().of));
   }
-  function rkOf(x) { return x.rank ? x.rank : ''; }
+  function rkOf(x) { return x.rank ? x.rank + (x.rolled ? '*' : '') : ''; }
   function cls(x) { return x.rank >= 1 && x.rank <= 3 ? 'r' + x.rank : ''; }
   function g(x) { return x.locked && x.pins != null ? x.pins : ''; }
   function mean(o) { return o.played ? Math.round(o.total / o.played) : ''; }
@@ -200,7 +201,7 @@
       }
     });
     var tbl = h('table', { class: 'os-tbl' }, h('thead', null, h('tr', null, ths.map(function (t) { return h('th', { text: t }); }))), h('tbody', null, trs));
-    return sheet(false, (bd.event + ' · ' + bd.category).toUpperCase(), flagEl(counts(bd), null, bd.roll), tbl, (bd.from_event ? (H.lang === 'ms' ? 'Skor diambil daripada permainan ' + bd.from_event + '. ' : 'Scores taken from the ' + bd.from_event + ' games. ') : '') + cbNote());
+    return sheet(false, (bd.event + ' · ' + bd.category).toUpperCase(), flagEl(counts(bd), null, bd.roll), tbl, (bd.rows.some(function (r) { return r.off.rolled; }) ? T().ro + ' ' : '') + (bd.from_event ? (H.lang === 'ms' ? 'Skor diambil daripada permainan ' + bd.from_event + '. ' : 'Scores taken from the ' + bd.from_event + ' games. ') : '') + cbNote());
   }
 
   // ---------- podium (top 4 of each selected event) ----------
@@ -241,8 +242,8 @@
       return h('tr', { class: cls({ rank: (t.points || t.tot.some(function (n) { return n; })) ? t.rank : 0 }) }, tds);
     });
     var tbl = h('table', { class: 'os-tbl os-med' }, h('thead', null, h('tr', null, h1), compact ? null : h('tr', null, h2)), h('tbody', null, trs));
-    var ok = bs.length && done === bs.length;
-    var flag = h('div', { class: 'os-flag' + (ok ? '' : ' prov') }, (ok ? L.off : (bs.some(function (b) { return b.roll; }) ? L.roll : L.prov)) + ' · ' + done + ' / ' + bs.length + ' ' + L.cur);
+    var ok = bs.length && done === bs.length && !D.rules.handicap;
+    var flag = h('div', { class: 'os-flag' + (ok ? '' : ' prov') }, (ok ? L.off : (D.rules.handicap ? L.hc : (bs.some(function (b) { return b.roll; }) ? L.roll : L.prov))) + ' · ' + done + ' / ' + bs.length + ' ' + L.cur);
     return sheet(false, L.medals, flag, tbl, ptsNote());
   }
 
@@ -333,6 +334,42 @@
     if (saving) return; saving = true;
     PM.api('header.save', { tournament_id: tid, header: H }).then(function (r) { saving = false; D.header = r; note('Header saved.', true); }, function (e) { saving = false; note((e && e.message) || 'Could not save.'); });
   }
+  function buildTies() {
+    var box = document.getElementById('ties'), items = [];
+    D.boards.forEach(function (bd) { (bd.ties || []).forEach(function (t) { items.push({ bd: bd, t: t }); }); });
+    if (!items.length) { box.style.display = 'none'; box.replaceChildren(); return; }
+    box.style.display = '';
+    var kids = [h('h2', { class: 'pm-h', style: 'font-size:24px', text: 'Ties for a medal place' }),
+      h('p', { class: 'pm-help', text: 'Bowlers level after the tie-break rules. When the officials have settled the tie (roll-off), record the finishing order here. It only counts while exactly these bowlers are still tied.' })];
+    items.forEach(function (it, n) {
+      var bd = it.bd, t = it.t, sels = [], reason = h('input', { class: 'pm-in', id: 'ro-reason-' + n, type: 'text', maxlength: 200, placeholder: 'Reason, e.g. roll-off game on lane 4', 'aria-label': 'Reason for the roll-off result' });
+      var title = h('b', { text: bd.event + ' · ' + bd.category + ' — tie for place ' + t.rank + (t.resolved ? ' (settled)' : ' (open)') });
+      if (t.resolved) {
+        kids.push(h('div', { class: 'os-box', 'data-tie': n }, title,
+          t.rows.map(function (r) { return h('div', { text: r.place + '. ' + r.name + ' · ' + r.team + ' · ' + r.total }); }),
+          h('div', { class: 'pm-help', text: 'Reason: ' + t.reason }),
+          h('div', { class: 'lb-row' }, h('button', { class: 'pm-btn pm-btn--sm', id: 'ro-clear-' + n, type: 'button', onClick: function () {
+            PM.api('rolloff.clear', { tournament_id: tid, category_id: bd.category_id, event_key: bd.event_key, ids: t.ids, reason: 'Roll-off cancelled' }).then(function () { note('Roll-off cancelled.', true); load(); }, function (e) { note((e && e.message) || 'Could not cancel.'); });
+          } }, 'Cancel this roll-off'))));
+        return;
+      }
+      var rows = t.rows.map(function (r) {
+        var sel = h('select', { class: 'pm-sel ro-sel', 'data-id': r.entry_id, 'aria-label': 'Finishing place of ' + r.name }, h('option', { value: '' }, 'Place…'),
+          t.rows.map(function (x, i) { return h('option', { value: String(i + 1) }, ordinal(i + 1)); }));
+        sels.push(sel);
+        return h('div', { class: 'lb-row' }, sel, h('span', { text: r.name + ' · ' + r.team + ' · ' + r.total + ' pins' }));
+      });
+      kids.push(h('div', { class: 'os-box', 'data-tie': n }, title, rows, reason,
+        h('div', { class: 'lb-row' }, h('button', { class: 'pm-btn', id: 'ro-save-' + n, type: 'button', onClick: function () {
+          var pos = sels.map(function (x) { return Number(x.value); });
+          if (pos.some(function (v) { return !v; }) || pos.slice().sort().join() !== t.rows.map(function (_, i) { return i + 1; }).join()) { note('Give every bowler a different finishing place.'); return; }
+          var order = sels.slice().sort(function (a, b) { return Number(a.value) - Number(b.value); }).map(function (x) { return x.getAttribute('data-id'); });
+          PM.api('rolloff.save', { tournament_id: tid, category_id: bd.category_id, event_key: bd.event_key, order: order, reason: reason.value }).then(function () { note('Roll-off recorded.', true); load(); }, function (e) { note((e && e.message) || 'Could not save.'); });
+        } }, 'Record roll-off result'))));
+    });
+    box.replaceChildren.apply(box, kids);
+  }
+  function ordinal(n) { return n + (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'); }
   function buildPick() {
     var p = document.getElementById('pick'), kids = [];
     D.categories.forEach(function (c) {
