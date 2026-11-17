@@ -114,8 +114,9 @@
   function paintArch() {
     var box = document.getElementById('arch'), a = ALL.filter(function (r) { return r.archived; });
     if (!a.length) { box.replaceChildren(); return; }
-    box.replaceChildren(h('button', { class: 'pm-btn', id: 'archtoggle', type: 'button', 'aria-expanded': String(showArch), onClick: function () { showArch = !showArch; paintArch(); } }, (showArch ? 'Hide' : 'Show') + ' archived (' + a.length + ')'),
-      showArch ? h('div', { class: 'hub-cards', id: 'archlist', style: 'margin-top:14px' }, a.map(card)) : null);
+    var kids = [h('button', { class: 'pm-btn', id: 'archtoggle', type: 'button', 'aria-expanded': String(showArch), onClick: function () { showArch = !showArch; paintArch(); } }, (showArch ? 'Hide' : 'Show') + ' archived (' + a.length + ')')];
+    if (showArch) kids.push(h('div', { class: 'hub-cards', id: 'archlist', style: 'margin-top:14px' }, a.map(card)));
+    box.replaceChildren.apply(box, kids);
   }
   function paintAll() {
     var list = document.getElementById('list'), rows = ALL.filter(function (r) { return !r.archived; });

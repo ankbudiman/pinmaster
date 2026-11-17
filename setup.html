@@ -977,10 +977,27 @@ h1,h2,h3,p{margin:0}
     </sc-if>
 
     <!-- Footer nav -->
-    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px">
+    <div id="savebar" style="position: sticky; bottom: 0; z-index: 20; background: #F1F3F7; border-top: 1px solid #C3CBD8; margin-top: 8px; padding: 12px 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
       <button class="pm-btn" onClick="{{goBack}}" disabled="{{isFirst}}">Back</button>
-      <button class="pm-btn pm-btn--pri" onClick="{{goNext}}" disabled="{{nextOff}}">{{nextLabel}}</button>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px">
+        <span id="savestat" style="font-size: 14px; font-weight: 600; color: {{syncColor}}" role="status" aria-live="polite">{{syncText}}</span>
+        <button class="pm-btn" id="savebtn" onClick="{{saveNow}}" disabled="{{barSaveOff}}">Save</button>
+        <button class="pm-btn pm-btn--pri" onClick="{{goNext}}" disabled="{{nextOff}}">{{nextLabel}}</button>
+      </div>
     </div>
+    <sc-if value="{{leaveOpen}}" hint-placeholder-val="{{ false }}">
+      <div role="dialog" aria-modal="true" aria-label="Unsaved changes" style="position: fixed; inset: 0; z-index: 60; background: rgba(14, 26, 43, 0.55); display: flex; align-items: center; justify-content: center; padding: 16px">
+        <div style="background: #FFFFFF; border-radius: 14px; max-width: 480px; width: 100%; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 28px">Unsaved changes</h2>
+          <p style="font-size: 15px; color: #44546A">You have changes that are not saved yet. Save them first, or they are not sent to the sheet.</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end">
+            <button class="pm-btn" id="leave-go" onClick="{{leaveGo}}">Continue without saving</button>
+            <button class="pm-btn" id="leave-stay" onClick="{{leaveStay}}">Stay here</button>
+            <button class="pm-btn pm-btn--pri" id="leave-save" onClick="{{leaveSave}}">Save and continue</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
   </div>
   </sc-if>
 </div>
@@ -1157,11 +1174,28 @@ class Component extends DCLogic {
   }
 
   // ---------- saving ----------
+  // Saving is by button (the server is slow). queueSave only marks "unsaved"; a timer runs only when a delay is passed on purpose.
   queueSave(delay) {
     clearTimeout(this._tm);
-    this._tm = setTimeout(() => this.flush(), delay == null ? 1200 : delay);
+    if (delay != null) this._tm = setTimeout(() => this.flush(), delay);
     if (this.state.sync !== 'pending') this.setState({ sync: 'pending', syncMsg: '' });
   }
+  needsSave() {
+    const s = this.state, t = s.tours[s.tid];
+    return !!(t && t.id && (this._busy || s.sync === 'pending' || s.sync === 'error' || s.sync === 'invalid'));
+  }
+  // Run fn now, or ask first when there are unsaved changes.
+  guard(fn) {
+    if (!this.needsSave()) { fn(); return; }
+    this._leaveFn = fn; this.setState({ leaveOpen: true });
+  }
+  async leaveSave() {
+    const fn = this._leaveFn; this._leaveFn = null; this.setState({ leaveOpen: false });
+    const ok = await this.flush();
+    if (ok && fn) fn();
+  }
+  leaveGo() { const fn = this._leaveFn; this._leaveFn = null; this.setState({ leaveOpen: false }); if (fn) fn(); }
+  leaveStay() { this._leaveFn = null; this.setState({ leaveOpen: false }); }
   async flush() {
     clearTimeout(this._tm);
     if (this._busy) { this._again = true; return true; }
@@ -1816,18 +1850,18 @@ class Component extends DCLogic {
       n: i + 1, label: labels[id],
       cls: 'pm-tab' + (s.tab === id ? ' pm-tab--on' : ''),
       cur: s.tab === id ? 'step' : 'false',
-      go: () => this.setState({ tab: id })
+      go: () => this.guard(() => this.setState({ tab: id }))
     }));
     const idx = order.indexOf(s.tab);
     const isFirst = idx === 0, isLast = idx === order.length - 1;
     const nextLabel = isLast ? (t.status === 'Draft' ? 'Publish tournament' : 'Already published') : 'Next: ' + labels[order[idx + 1]];
     const nextOff = isLast ? (ro || s.pubMsg || dateErr || !ready || !t.id || t.status !== 'Draft') : false;
-    const goBack = () => this.setState({ tab: order[Math.max(0, idx - 1)] });
+    const goBack = () => this.guard(() => this.setState({ tab: order[Math.max(0, idx - 1)] }));
     const goNext = () => {
       if (isLast) {
-        this.setStatus('Registration open', '').then((err) => { if (err) this.setState({ errText: err, errReload: false }); else this.setState({ pubMsg: true }); });
+        this.guard(() => this.setStatus('Registration open', '').then((err) => { if (err) this.setState({ errText: err, errReload: false }); else this.setState({ pubMsg: true }); }));
       } else {
-        this.setState({ tab: order[idx + 1] });
+        this.guard(() => this.setState({ tab: order[idx + 1] }));
       }
     };
     const readyMsg = cats.length === 0 ? 'Add at least one category in step 2 before publishing.' : evKeys.length === 0 ? 'Switch on at least one event in step 2 before publishing.' : 'Add at least one team in step 3 before publishing.';
@@ -1975,6 +2009,8 @@ class Component extends DCLogic {
       newTour: () => this.newTour(),
       pubMsg: s.pubMsg,
       saveNow: () => this.flush(),
+      barSaveOff: ro || !t.id || !(s.sync === 'pending' || s.sync === 'error' || s.sync === 'invalid'),
+      leaveOpen: !!s.leaveOpen, leaveSave: () => this.leaveSave(), leaveGo: () => this.leaveGo(), leaveStay: () => this.leaveStay(),
       reload: () => this.reload(),
       clearErr: () => this.setState({ errText: '' }),
       hasErr: !!s.errText, errText: s.errText, errReload: s.errReload, noReload: !s.errReload,
@@ -1982,8 +2018,8 @@ class Component extends DCLogic {
       createTour: () => this.createTour(),
       createOff: !t.id && !!this.detailsIssue(this.detailsOf(t)),
       detailsErr: this.detailsIssue(this.detailsOf(t)), hasDetailsErr: !!this.detailsIssue(this.detailsOf(t)) && !!(t.id || t.name || t.code),
-      syncText: !t.id ? 'Not saved yet' : s.sync === 'saving' || s.sync === 'pending' ? 'Saving…' : s.sync === 'invalid' ? s.syncMsg : s.sync === 'error' ? 'Not saved. ' + s.syncMsg : 'All changes saved',
-      syncColor: !t.id || s.sync === 'invalid' ? '#6B4400' : s.sync === 'error' ? '#B42318' : s.sync === 'saving' || s.sync === 'pending' ? '#44546A' : '#0B5A38',
+      syncText: !t.id ? 'Not saved yet' : s.sync === 'saving' ? 'Saving…' : s.sync === 'pending' ? 'Unsaved changes. Click Save.' : s.sync === 'invalid' ? s.syncMsg : s.sync === 'error' ? 'Not saved. ' + s.syncMsg : 'All changes saved',
+      syncColor: !t.id || s.sync === 'invalid' ? '#6B4400' : s.sync === 'error' ? '#B42318' : s.sync === 'saving' ? '#44546A' : s.sync === 'pending' ? '#6B4400' : '#0B5A38',
       syncRetry: s.sync === 'error',
       steps, isDetails: s.tab === 'details', isEvents: s.tab === 'events', isRules: s.tab === 'rules', isSchedule: s.tab === 'schedule',
       blocks: rBlocks, secNote, presetChips, presetText, showPresets: tab === 'rules' && canEdit && rsec === 'sc',
