@@ -825,49 +825,9 @@ h1,h2,h3,p{margin:0}
         </div>
       </sc-if>
 
-      <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
-        <div>
-          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Block groupings</h2>
-          <p style="font-size: 15px; color: #44546A; margin-top: 4px; line-height: 1.45">Categories in the same group share one block when the venue has enough lanes, and bowl at the same time on separate lanes. "Own block" means the category bowls alone. The lane draw and score entry read these groupings. Group numbers are saved with the rules.</p>
-        </div>
-        <sc-if value="{{noCatsHere}}" hint-placeholder-val="{{ false }}">
-          <p style="font-size: 14px; color: #44546A">Add categories in step 2 first.</p>
-        </sc-if>
-        <div style="display: flex; flex-direction: column; gap: 8px">
-          <sc-for list="{{grpRows}}" as="gr" hint-placeholder-count="3">
-            <div style="border: 1px solid #C3CBD8; border-radius: 10px; padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px">
-              <strong style="flex: 1 1 160px; font-size: 16px; overflow-wrap: anywhere">{{gr.name}}</strong>
-              <sc-for list="{{gr.cols}}" as="gc" hint-placeholder-count="2">
-                <div style="display: flex; flex-direction: column; gap: 4px">
-                  <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #33445C">{{gc.head}}</span>
-                  <div style="display: flex; align-items: center; gap: 8px">
-                    <button class="pm-step" onClick="{{gc.dec}}" disabled="{{gc.decOff}}" aria-label="{{gc.decAria}}">−</button>
-                    <span style="min-width: 92px; text-align: center; font-size: 15px; font-weight: 600">{{gc.label}}</span>
-                    <button class="pm-step" onClick="{{gc.inc}}" disabled="{{gc.incOff}}" aria-label="{{gc.incAria}}">+</button>
-                  </div>
-                </div>
-              </sc-for>
-            </div>
-          </sc-for>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px">
-          <button class="pm-btn" onClick="{{autoGroup}}" disabled="{{groupOff}}">Group in pairs</button>
-          <button class="pm-btn pm-btn--pri" onClick="{{buildBlocks}}" disabled="{{groupOff}}">Build blocks from groupings</button>
-        </div>
-        <sc-if value="{{buildAsk}}" hint-placeholder-val="{{ false }}">
-          <div style="padding: 14px 16px; border-radius: 10px; background: #FFF8EA; border: 2px solid #0E1A2B; display: flex; flex-direction: column; gap: 10px">
-            <strong style="font-size: 16px">Replace the {{blocksTotal}} blocks you have now?</strong>
-            <p style="font-size: 14px; color: #33445C; line-height: 1.45">The schedule is rebuilt from the groupings, the rules and the venue lanes. Any block you edited by hand is lost.</p>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px">
-              <button class="pm-btn pm-btn--pri" onClick="{{confirmBuild}}">Replace blocks</button>
-              <button class="pm-btn" onClick="{{cancelBuild}}">Cancel</button>
-            </div>
-          </div>
-        </sc-if>
-        <sc-if value="{{buildNote}}" hint-placeholder-val="{{ false }}">
-          <p style="font-size: 14px; font-weight: 600; color: #0B5A38; line-height: 1.45">{{buildNote}}</p>
-        </sc-if>
-        <p style="font-size: 13px; color: #44546A; line-height: 1.45">{{grpSummary}}</p>
+      <section style="background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
+        <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">How blocks work</h2>
+        <p style="font-size: 15px; color: #44546A; line-height: 1.5">A block is one session: a name, a day and a start time. Inside it, add one line for each category and event that bowls at that time, each on its own lanes. Example: Block 1 has a Terbuka Lelaki Trio line on lanes 1 to 6 and a Terbuka Perempuan Trio line on lanes 7 to 12. Use "+ Add line" to put another category or event in the same block. Lines in one block must not share lanes.</p>
       </section>
 
       <div style="display: flex; flex-wrap: wrap; gap: 10px" role="group" aria-label="Tournament days">
@@ -890,35 +850,43 @@ h1,h2,h3,p{margin:0}
             <p style="padding: 24px 16px; text-align: center; border: 1px dashed #7C8AA0; border-radius: 10px; font-size: 15px; color: #44546A">{{emptyMsg}}</p>
           </sc-if>
 
-          <div style="display: flex; flex-direction: column; gap: 10px">
-            <sc-for list="{{rows}}" as="b" hint-placeholder-count="3">
-              <button class="{{b.cls}}" onClick="{{b.pick}}" aria-pressed="{{b.on}}">
-                <span style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px">
-                  <span style="font-size: 17px; font-weight: 700">{{b.name}} · {{b.start}}</span>
-                  <span style="font-size: 14px; font-weight: 600; color: #33445C">Lanes {{b.lanesLabel}} · {{b.capacity}} bowlers</span>
-                </span>
-                <span style="display: block; margin-top: 6px; font-size: 15px; color: #33445C">{{b.catName}} · {{b.evName}} · {{b.games}} games</span>
-                <sc-if value="{{b.hasIssue}}" hint-placeholder-val="{{ false }}">
-                  <span style="display: block; margin-top: 8px; font-size: 14px; font-weight: 700; color: #B42318">{{b.issue}}</span>
-                </sc-if>
-              </button>
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <sc-for list="{{cards}}" as="cd" hint-placeholder-count="2">
+              <div style="border: 1px solid #C3CBD8; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #F7F9FC">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px">
+                  <strong style="font-size: 18px">{{cd.title}}</strong>
+                  <button class="pm-btn" onClick="{{cd.addLine}}" disabled="{{ro}}">+ Add line</button>
+                </div>
+                <sc-for list="{{cd.lines}}" as="b" hint-placeholder-count="2">
+                  <button class="{{b.cls}}" onClick="{{b.pick}}" aria-pressed="{{b.on}}">
+                    <span style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px">
+                      <span style="font-size: 16px; font-weight: 700">{{b.catName}} · {{b.evName}}</span>
+                      <span style="font-size: 14px; font-weight: 600; color: #33445C">Lanes {{b.lanesLabel}} · {{b.capText}}</span>
+                    </span>
+                    <span style="display: block; margin-top: 4px; font-size: 14px; color: #33445C">{{b.games}} games</span>
+                    <sc-if value="{{b.hasIssue}}" hint-placeholder-val="{{ false }}">
+                      <span style="display: block; margin-top: 6px; font-size: 14px; font-weight: 700; color: #B42318">{{b.issue}}</span>
+                    </sc-if>
+                  </button>
+                </sc-for>
+              </div>
             </sc-for>
           </div>
         </section>
 
         <section style="flex: 1 1 300px; min-width: 0; background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
-          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Edit block</h2>
+          <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Edit line</h2>
           <sc-if value="{{noSel}}" hint-placeholder-val="{{ false }}">
-            <p style="font-size: 15px; color: #44546A">Select a block on the left to edit it.</p>
+            <p style="font-size: 15px; color: #44546A">Select a line on the left to edit it.</p>
           </sc-if>
           <sc-if value="{{hasSel}}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; flex-direction: column; gap: 14px">
               <div>
-                <label class="pm-lbl" for="b-name">Block name</label>
+                <label class="pm-lbl" for="b-name">Block name (all lines of the block)</label>
                 <input class="pm-in" id="b-name" type="text" value="{{sb.name}}" onInput="{{sb.onName}}" disabled="{{ro}}">
               </div>
               <div>
-                <label class="pm-lbl" for="b-start">Start time</label>
+                <label class="pm-lbl" for="b-start">Start time (all lines of the block)</label>
                 <input class="pm-in" id="b-start" type="time" value="{{sb.start}}" onInput="{{sb.onStart}}" disabled="{{ro}}">
               </div>
               <div>
@@ -948,7 +916,7 @@ h1,h2,h3,p{margin:0}
                 </div>
               </div>
               <p style="font-size: 14px; color: #33445C">{{gamesHint}}</p>
-              <button class="pm-btn pm-btn--ghost" onClick="{{removeBlock}}" disabled="{{ro}}">Remove this block</button>
+              <button class="pm-btn pm-btn--ghost" onClick="{{removeBlock}}" disabled="{{ro}}">Remove this line</button>
             </div>
           </sc-if>
         </section>
@@ -1125,6 +1093,8 @@ class Component extends DCLogic {
     const cfgOut = JSON.parse(JSON.stringify(c));
     delete cfgOut.cats;
     cfgOut.scale = (c.scale || []).map((n) => parseInt(n, 10) || 0);
+    const ps = {}; Object.keys(c.pscale || {}).forEach((k) => { if (Array.isArray(c.pscale[k]) && c.pscale[k].length) ps[k] = c.pscale[k].map((n) => parseInt(n, 10) || 0); });
+    cfgOut.pscale = ps;
     cfgOut.lanes = isNaN(ln) ? 0 : ln;
     cfgOut.meta = { edition: d.edition, notes: d.notes, city: d.city, regOpen: d.regOpen, regClose: d.regClose, limit: v.limit };
     const ev = []; let o = 0;
@@ -1303,7 +1273,7 @@ class Component extends DCLogic {
       allIn: { s: true, d: true, t: true, g: false },
       handicap: false, hcPct: 80, hcBase: 200,
       tb: ['last', 'last2'], needRoll: true,
-      pts: true, scale: ['10', '8', '6', '5', '4', '3', '2', '1'], mult: { s: 1, d: 1, t: 1, g: 1, a: 1, m: 1 }, medals: 3, teamRule: 'points', indRule: 'medals',
+      pts: true, scale: ['10', '8', '6', '5', '4', '3', '2', '1'], mult: { s: 1, d: 1, t: 1, g: 1, a: 1, m: 1 }, medals: 3, pscale: {}, lpe: {}, teamRule: 'points', indRule: 'medals',
       lanes: 24, perLane: 2, drawMethod: 'random', movePair: 2, moveTeam: 1, moveEvery: 2, moveDir: 'right',
       mGames: 0, mCarry: 'none',
       sOn: false, sN: 3, sGames: 1, sSeed: 'masters',
@@ -1351,6 +1321,7 @@ class Component extends DCLogic {
     const setT = (k) => (e) => { const v = e.target.value; updT((x) => Object.assign({}, x, { [k]: v })); };
     const setName = (k) => (e) => { const v = e.target.value; updT((x) => { const y = Object.assign({}, x, { [k]: v }); if (!y.id && y.codeAuto !== false) y.code = this.suggestCode(y.name, y.edition); return y; }); };
     const setCode = (e) => { const v = String(e.target.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10); updT((x) => Object.assign({}, x, { code: v, codeAuto: false })); };
+    const patchBlock = (sel, patch) => updT((x) => Object.assign({}, x, { blocks: x.blocks.map((b) => (b.day === sel.day && b.name === sel.name && b.start === sel.start) ? Object.assign({}, b, patch) : b) }));
     const patchB = (id, patch) => updT((x) => Object.assign({}, x, { blocks: x.blocks.map((b) => b.id === id ? Object.assign({}, b, patch) : b) }));
     const num = (e) => { const v = parseInt(e.target.value, 10); return isNaN(v) ? 0 : v; };
 
@@ -1396,6 +1367,7 @@ class Component extends DCLogic {
     const gamesFor = (c, k) => (!c ? 6 : k === 'm' ? (cfg.mGames || c.games) : effG(c, k));
     const tevs = cfg.tev || [];
     const tevKeys = tevs.map((x) => x.k);
+    const lpeOf = (k) => { const td = tevs.find((q) => q.k === k); if (!td) return 1; if (td.baker) return 1; const v = cfg.lpe && Number(cfg.lpe[k]); return v >= 1 && v <= 3 ? v : 1; };
     const evAll = ['s', 'd'].concat(tevKeys);                     // events with games of their own
     const evKeys = evAll.concat(['m']).filter((k) => cfg.ev[k]);
     const tevOf = (k) => tevs.find((x) => x.k === k) || null;
@@ -1445,15 +1417,17 @@ class Component extends DCLogic {
         { title: 'POINTS AND MEDALS', rows: [
           { k: 'pts', label: 'Points', val: c.pts ? 'Places 1 to ' + c.scale.length + ': ' + c.scale.join(', ') : 'Not used', risky: true },
           { k: 'medals', label: 'Medal places', val: 'Top ' + c.medals, risky: true },
+          { k: 'pscale', label: 'Own points per event', val: c.pts ? (mk.filter((k) => c.ev[k] && c.pscale && c.pscale[k]).map((k) => NM[k] + ': ' + c.pscale[k].join(', ')).join('; ') || 'None, every event uses the shared scale') : 'Not used', risky: true },
           { k: 'mult', label: 'Event multipliers', val: c.pts ? mk.filter((k) => c.ev[k]).map((k) => NM[k] + ' ' + MUL + (c.mult[k] == null ? 1 : c.mult[k])).join(', ') : 'Not used', risky: true },
           { k: 'teamRule', label: 'Team ranking', val: c.teamRule === 'medals' ? 'Medals first, points break ties' : 'Points first, medals break ties', risky: true },
           { k: 'indRule', label: 'Player ranking', val: c.indRule === 'pinfall' ? 'Medals, then pinfall' : 'Medals only', risky: true }
         ] },
         { title: 'LANES AND SCHEDULE', rows: [
           { k: 'lanes', label: 'Venue lanes', val: c.lanes + ' lanes, ' + plural(c.perLane, 'bowler') + ' per lane', risky: false },
+          { k: 'epl', label: 'Doubles pairs per lane', val: (c.epl && c.epl.d) >= 2 ? c.epl.d + ' pairs share a lane' : 'Own lane', risky: false },
           { k: 'drawMethod', label: 'Lane draw', val: c.drawMethod === 'numbers' ? 'Number pull' : 'Random draw', risky: false },
           { k: 'move', label: 'Lane movement', val: move, risky: false },
-          { k: 'groups', label: 'Block groupings', val: grpText, risky: false }
+          { k: 'lpe', label: 'Lanes per team', val: tv.filter((x) => c.ev[x.k] && !x.baker).map((x) => x.name + ' ' + ((c.lpe && c.lpe[x.k]) || 1)).join(', ') || 'No team events', risky: false }
         ] },
         { title: 'MASTERS', rows: [
           { k: 'mq', label: 'Qualifiers', val: c.ev.m ? (c.cats.length ? mqText + ' (' + qTot + ' in all)' : 'No categories yet') : 'Masters off', risky: true },
@@ -1517,7 +1491,7 @@ class Component extends DCLogic {
       ] });
     } else if (tab === 'points') {
       const f = [field('Use points', 'Points feed the team standings. Off shows ranks and medals only.', onOff(cfg.pts, (on) => updCfg({ pts: on })), true),
-        field('Medal places', 'How many places receive a medal in every category and event.', optChips(cfg.medals, [[1, 'Top 1'], [2, 'Top 2'], [3, 'Top 3']], (v) => updCfg({ medals: v })), true)];
+        field('Medal places', 'How many places are listed as medal places in every category and event (up to 5). A roll-off is only asked for ties in places 1 to 3.', optChips(cfg.medals, [[1, 'Top 1'], [2, 'Top 2'], [3, 'Top 3'], [4, 'Top 4'], [5, 'Top 5']], (v) => updCfg({ medals: v })), true)];
       if (cfg.pts) {
         f.push(stp('Places that score', 'Number of places that earn points.', cfg.scale.length, 1, 16, 1, numS, true, (nv) => updT((x) => { const sc = x.cfg.scale.slice(0, nv); while (sc.length < nv) sc.push('1'); return Object.assign({}, x, { cfg: Object.assign({}, x.cfg, { scale: sc }) }); })));
         f.push(field('Quick scales', 'Fills the points below. You can still edit each place.', [
@@ -1528,7 +1502,13 @@ class Component extends DCLogic {
         f.push(Object.assign(field('Points per place', 'One scale for the whole tournament. A shared place scores that place\'s points, then the event multiplier is applied. Team champion: most points, then golds, silvers, bronzes.', [], true), { inputs: scaleIn }));
       }
       rBlocks = [{ title: 'Points and medals', note: '', fields: f }];
-      if (cfg.pts) rBlocks.push({ title: 'Event multipliers', note: 'Multiplies the points of every place in that event. Use ×0 to leave an event out of the standings.', fields: evAll.concat(['a', 'm']).map((k) => stp(EVN[k], '', cfg.mult[k] == null ? 1 : cfg.mult[k], 0, 5, 1, (v) => MUL + v, true, (nv) => updIn('mult', k, nv))) });
+      if (cfg.pts) {
+        const ownOn = (k) => !!(cfg.pscale && cfg.pscale[k]);
+        const setOwn = (k, on) => updT((x) => { const ps = Object.assign({}, x.cfg.pscale || {}); if (on) { const m = x.cfg.mult && x.cfg.mult[k] != null ? x.cfg.mult[k] : 1; const base = x.cfg.scale.slice(0, Math.max(5, x.cfg.medals)); while (base.length < Math.max(5, x.cfg.medals)) base.push('0'); ps[k] = base.map((v) => String(Math.round((parseInt(v, 10) || 0) * m))); } else delete ps[k]; return Object.assign({}, x, { cfg: Object.assign({}, x.cfg, { pscale: ps }) }); });
+        const ownIn = (k) => (cfg.pscale[k] || []).map((v, i) => ({ label: ord(i + 1), val: v, aria: 'Points for ' + ord(i + 1) + ' place in ' + EVN[k], set: (e) => { const nv = String((e && e.target && e.target.value) || '').replace(/[^0-9]/g, '').slice(0, 3); updT((x) => Object.assign({}, x, { cfg: Object.assign({}, x.cfg, { pscale: Object.assign({}, x.cfg.pscale, { [k]: x.cfg.pscale[k].map((q, j) => (j === i ? nv : q)) }) }) })); } }));
+        rBlocks.push({ title: 'Points per event', note: 'Some events can give more points than others. Choose Own points to give an event its own table. An event on the shared scale uses the scale above times its multiplier. An event with Own points ignores both. Places not listed score 0.', fields: evAll.filter((k) => cfg.ev[k]).map((k) => Object.assign(field(EVN[k], ownOn(k) ? 'Own points for this event.' : 'Shared scale' + (cfg.mult[k] != null && cfg.mult[k] !== 1 ? ' ×' + cfg.mult[k] : '') + '.', optChips(ownOn(k) ? 'own' : 'shared', [['shared', 'Shared scale'], ['own', 'Own points']], (v) => setOwn(k, v === 'own')), true), { inputs: ownOn(k) ? ownIn(k) : [] })) });
+      }
+      if (cfg.pts) rBlocks.push({ title: 'Event multipliers', note: 'Multiplies the points of every place in that event. Use ×0 to leave an event out of the standings.', fields: evAll.map((k) => stp(EVN[k], '', cfg.mult[k] == null ? 1 : cfg.mult[k], 0, 5, 1, (v) => MUL + v, true, (nv) => updIn('mult', k, nv))) });
       rBlocks.push({ title: 'Ranking', note: 'How teams and players are ordered in the results.', fields: [
         field('Team ranking', 'Points first: most points wins and medals break ties. Medals first: gold, then silver, then bronze, and points break ties.', optChips(cfg.teamRule, [['points', 'Points first'], ['medals', 'Medals first']], (v) => updCfg({ teamRule: v })), true),
         field('Player ranking', 'Medals only counts gold, silver and bronze. Medals, then pinfall uses total pinfall to separate players with the same medals.', optChips(cfg.indRule, [['medals', 'Medals only'], ['pinfall', 'Medals, then pinfall']], (v) => updCfg({ indRule: v })), true)
@@ -1552,6 +1532,10 @@ class Component extends DCLogic {
           { title: 'Bowlers per lane', note: 'The number of lanes comes from Details (' + lanesN + ' lanes). Lane draw and Masters use both numbers.', fields: [
             field('Bowlers per lane', 'Bowlers who share one lane in a squad.', optChips(cfg.perLane, [[1, '1'], [2, '2'], [3, '3']], (v) => updCfg({ perLane: v })), false)
           ] },
+          { title: 'Lane sharing', note: 'Doubles: how many pairs share one lane. With 2, two pairs (from different teams when drawn by numbers) bowl on the same lane and are shown as 1A, 1B, 2A, 2B. The Admin can still move any pair by hand on the Squads and Lanes page. Trios and team events keep their own lane.', fields: [
+            field('Doubles pairs per lane', '1 = each pair has its own lane.', optChips((cfg.epl && cfg.epl.d) || 1, [[1, '1 (own lane)'], [2, '2 (share a lane)']], (v) => updCfg({ epl: Object.assign({}, cfg.epl || {}, { d: v }) })), false)
+          ] },
+          ...(tevs.filter((x) => cfg.ev[x.k]).length ? [{ title: 'Lanes per team', note: 'How many lanes one team uses in each team event. 1 means the whole team bowls on one lane (a team of 5 on one lane is 1). Baker teams always use 1 lane.', fields: tevs.filter((x) => cfg.ev[x.k]).map((x) => x.baker ? Object.assign(field(x.name + ' (' + x.size + ' bowlers)', 'Baker: always 1 lane.', [], false), {}) : stp(x.name + ' (' + x.size + ' bowlers)', 'Lanes one team takes.', lpeOf(x.k), 1, 3, 1, (v) => v + (v === 1 ? ' lane' : ' lanes'), false, (nv) => updIn('lpe', x.k, nv))) }] : []),
           { title: 'Lane draw', note: 'Random: the app draws lanes by chance. Number pull: teams pull numbers and the Admin types them in on the Squads and Lanes page. Each team starts at its number; extra pairs or trios of a team follow in rounds.', fields: [
             field('Draw method', 'Applies to every block of this tournament.', optChips(cfg.drawMethod || 'random', [['random', 'Random draw'], ['numbers', 'Number pull']], (v) => updCfg({ drawMethod: v })), false)
           ] },
@@ -1680,7 +1664,7 @@ class Component extends DCLogic {
       });
     };
     const tevRows = tevs.map((td) => {
-      const k = td.k, laneN = td.baker ? 1 : Math.ceil(td.size / cfg.perLane);
+      const k = td.k, laneN = lpeOf(k);
       return {
         key: k, nameId: 'tev-' + k, nameVal: td.name, onName: (e) => setTev(k, { name: String((e && e.target && e.target.value) || '').slice(0, 24) }),
         sizeVal: td.size + ' bowlers', dec: () => { if (td.size > 3) setTev(k, { size: td.size - 1 }); }, inc: () => { if (td.size < 6) setTev(k, { size: td.size + 1 }); },
@@ -1688,7 +1672,7 @@ class Component extends DCLogic {
         onChips: onOff(!!cfg.ev[k], (on) => toggleEv(k, on)),
         fmtChips: optChips(td.baker ? 'baker' : 'ind', [['baker', 'Baker'], ['ind', 'Individual scores']], (v) => setTev(k, { baker: v === 'baker', }) ),
         allChips: onOff(!!(cfg.allIn && cfg.allIn[k]), (on) => updIn('allIn', k, on)),
-        help: td.baker ? 'Baker: the ' + td.size + ' bowlers share one lane and one team score per game. It counts as a single game. Left out of All Events.' : 'Individual scores: every bowler scores, and the team total is the sum of the ' + td.size + '. A team uses ' + plural(laneN, 'lane') + ' at ' + plural(cfg.perLane, 'bowler') + ' per lane.',
+        help: td.baker ? 'Baker: the ' + td.size + ' bowlers share one lane and one team score per game. It counts as a single game. Left out of All Events.' : 'Individual scores: every bowler scores, and the team total is the sum of the ' + td.size + '. A team uses ' + plural(laneN, 'lane') + ' (change it under Rules and format, Lanes and movement).',
         removeLabel: 'Remove ' + td.name, remove: () => removeTev(k)
       };
     });
@@ -1880,6 +1864,12 @@ class Component extends DCLogic {
     };
     const dayBlocks = blocks.filter((b) => b.day === curDay);
     const selected = dayBlocks.find((b) => b.id === s.sel) || dayBlocks[0];
+    const capOf = (b) => {
+      const n = Math.max(0, b.to - b.from + 1), td = tevs.find((q) => q.k === b.evKey);
+      if (td) { const l = lpeOf(td.k); return Math.floor(n / l) + ' teams'; }
+      if (b.evKey === 'd') { const e = cfg.epl && cfg.epl.d >= 2 ? cfg.epl.d : 1; return (n * e) + ' pairs'; }
+      return (n * cfg.perLane) + ' bowlers';
+    };
     const rows = dayBlocks.map((b) => {
       const cat = cats.find((c) => c.id === b.catId);
       const issue = issueFor(b, dayBlocks);
@@ -1887,12 +1877,20 @@ class Component extends DCLogic {
       return {
         name: b.name, start: b.start, catName: cat ? cat.name : 'No category', evName: evName(b.evKey), games: b.games,
         lanesLabel: b.from + ' to ' + b.to,
-        capacity: Math.max(0, b.to - b.from + 1) * cfg.perLane,
+        capText: capOf(b),
         issue, hasIssue: !!issue, on,
         cls: 'pm-row' + (on ? ' pm-row--on' : ''),
         pick: () => this.setState({ sel: b.id })
       };
     });
+    const cards = [];
+    rows.forEach((r, i) => {
+      const b = dayBlocks[i], key = b.name + '|' + b.start;
+      let cd = cards.find((c) => c.key === key);
+      if (!cd) { cd = { key, title: b.name + ' · ' + b.start, start: b.start, lines: [], addLine: () => addLine(b) }; cards.push(cd); }
+      cd.lines.push(r);
+    });
+    cards.sort((x, y) => String(x.start).localeCompare(String(y.start)));
     let conflictCount = 0;
     for (let d = 1; d <= daysN; d++) {
       const L = blocks.filter((b) => b.day === d);
@@ -1905,8 +1903,8 @@ class Component extends DCLogic {
     const sb = selected ? {
       name: selected.name, start: selected.start, catId: selected.catId, evKey: selected.evKey,
       from: selected.from, to: selected.to, games: selected.games,
-      onName: (e) => patchB(selected.id, { name: e.target.value }),
-      onStart: (e) => patchB(selected.id, { start: e.target.value }),
+      onName: (e) => patchBlock(selected, { name: e.target.value }),
+      onStart: (e) => patchBlock(selected, { start: e.target.value }),
       onCat: (e) => {
         const cid = e.target.value;
         const c = cats.find((k) => k.id === cid);
@@ -1929,8 +1927,22 @@ class Component extends DCLogic {
       const id = 'b' + t.nid;
       updT((x) => Object.assign({}, x, {
         nid: x.nid + 1,
-        blocks: x.blocks.concat([{ id, day: curDay, name: 'Block ' + String.fromCharCode(65 + (x.blocks.length % 26)), start: '09:00', catId: firstCat.id, evKey: key, from: 1, to: lanesN, games: gamesFor(firstCat, key) }])
+        blocks: x.blocks.concat([{ id, day: curDay, name: 'Block ' + (new Set(x.blocks.map((q) => q.day + '|' + q.name + '|' + q.start)).size + 1), start: '09:00', catId: firstCat.id, evKey: key, from: 1, to: Math.min(lanesN, 6), games: gamesFor(firstCat, key) }])
       }));
+      this.setState({ sel: id });
+    };
+    const addLine = (b0) => {
+      if (ro || !firstCat) return;
+      const same = t.blocks.filter((q) => q.day === b0.day && q.name === b0.name && q.start === b0.start);
+      const last = same[same.length - 1] || b0;
+      const top = same.reduce((m, q) => Math.max(m, q.to), 0);
+      const len = Math.max(1, last.to - last.from + 1);
+      const from = top + 1 <= lanesN ? top + 1 : 1, to = Math.min(lanesN, from + len - 1);
+      const usedCats = same.filter((q) => q.evKey === last.evKey).map((q) => q.catId);
+      const nextCat = cats.find((c) => usedCats.indexOf(c.id) < 0) || cats.find((c) => c.id === last.catId) || firstCat;
+      const key = last.evKey;
+      const id = 'b' + t.nid;
+      updT((x) => Object.assign({}, x, { nid: x.nid + 1, blocks: x.blocks.concat([{ id, day: b0.day, name: b0.name, start: b0.start, catId: nextCat.id, evKey: key, from, to, games: gamesFor(nextCat, key) }]) }));
       this.setState({ sel: id });
     };
     const removeBlock = () => {
@@ -2037,7 +2049,7 @@ class Component extends DCLogic {
       showSummary: tab === 'rules' && (!canEdit || rsec === 'rv'), sumGroups,
       summaryTitle: canEdit ? 'Rules at a glance' : 'Tournament rules',
       summaryNote: canEdit ? 'Everything the tournament will use. Rows marked Changed are not saved yet.' : 'The rules this tournament runs on, as saved by the Admin.',
-      catNote, noCatsHere: cats.length === 0, grpRows, grpSummary, autoGroup, buildBlocks, confirmBuild: doBuild, cancelBuild: () => this.setState({ buildAsk: false }), buildAsk: s.buildAsk, buildNote: s.buildNote, groupOff,
+      cards, catNote, noCatsHere: cats.length === 0, grpRows, grpSummary, autoGroup, buildBlocks, confirmBuild: doBuild, cancelBuild: () => this.setState({ buildAsk: false }), buildAsk: s.buildAsk, buildNote: s.buildNote, groupOff,
       isFirst, nextLabel, nextOff, goBack, goNext,
       showReadyMsg: isLast && !ready && canEdit, readyMsg,
       on: { name: setName('name'), edition: setName('edition'), code: setCode, notes: setT('notes'), venue: setT('venue'), city: setT('city'), lanes: setT('lanes'), start: setT('start'), end: setT('end'), regOpen: setT('regOpen'), regClose: setT('regClose') },

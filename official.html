@@ -99,12 +99,12 @@
   var D = null, H = null, sel = {}, extra = { podium: true, medals: true, compact: false }, saving = false;
   var TX = {
     en: { rank: 'Rank', lane: 'Lane', no: 'No.', name: 'Name', team: 'Team', total: 'Total', avg: 'Avg', gap: 'Diff.', tteam: 'Team total',
-      winners: 'OFFICIAL WINNERS', medals: 'MEDAL STANDINGS', mh: ['G', 'S', 'B', '4'], pts: 'Points', tm: 'Total medals', prov: 'PROVISIONAL – NOT FOR SIGNING',
+      winners: 'OFFICIAL WINNERS', medals: 'MEDAL STANDINGS', mh: ['G', 'S', 'B', '4', '5'], pts: 'Points', tm: 'Total medals', prov: 'PROVISIONAL – NOT FOR SIGNING',
       off: 'OFFICIAL RESULT', printed: 'Printed', of: 'entries fully locked',
       none: 'No official result yet.', cur: 'events complete', sig: '(signature)', roll: 'TIE FOR A MEDAL PLACE – ROLL-OFF REQUIRED', hc: 'HANDICAP IS ON IN SETUP BUT NOT APPLIED – SCRATCH RESULTS ONLY', ro: '* Place decided by roll-off.',
       tbn: { best: 'higher best game', last: 'higher last game', last2: 'higher second-last game', first: 'higher first game' } },
     ms: { rank: 'KDK', lane: 'LANE', no: 'NO PESERTA', name: 'NAMA', team: 'PASUKAN', total: 'JUMLAH', avg: 'PURATA', gap: 'DIFF.', tteam: 'JUMLAH PASUKAN',
-      winners: 'KEPUTUSAN PEMENANG', medals: 'KEDUDUKAN PINGAT SEMASA', mh: ['E', 'P', 'G', '4'], pts: 'JUMLAH MATA', tm: 'JUMLAH PINGAT', prov: 'SEMENTARA – JANGAN TANDATANGAN',
+      winners: 'KEPUTUSAN PEMENANG', medals: 'KEDUDUKAN PINGAT SEMASA', mh: ['E', 'P', 'G', '4', '5'], pts: 'JUMLAH MATA', tm: 'JUMLAH PINGAT', prov: 'SEMENTARA – JANGAN TANDATANGAN',
       off: 'KEPUTUSAN RASMI', printed: 'Dicetak', of: 'penyertaan dikunci sepenuhnya',
       none: 'Belum ada keputusan rasmi.', cur: 'acara selesai', sig: '(tandatangan)', roll: 'SERI DI KEDUDUKAN PINGAT – PERLU ROLL-OFF', hc: 'HANDIKAP DIAKTIFKAN TETAPI BELUM DIGUNAKAN – KEPUTUSAN SCRATCH SAHAJA', ro: '* Tempat ditentukan oleh roll-off.',
       tbn: { best: 'permainan terbaik lebih tinggi', last: 'permainan terakhir lebih tinggi', last2: 'permainan kedua terakhir lebih tinggi', first: 'permainan pertama lebih tinggi' } }
@@ -119,8 +119,10 @@
     var R = D.rules, ms = H.lang === 'ms', M = D.medals;
     if (!R.pts) return '';
     var sc = R.scale.map(function (v, i) { return (i + 1) + ': ' + v; }).join(', ');
-    var mu = D.events.filter(function (e) { return M.mult[e.event_key] !== undefined && M.mult[e.event_key] !== 1; }).map(function (e) { return e.name + ' ×' + M.mult[e.event_key]; });
-    return (ms ? 'Mata mengikut tempat – ' : 'Points by place – ') + sc + (mu.length ? (ms ? '. Pengganda: ' : '. Multipliers: ') + mu.join(', ') : '') + '. ' +
+    var own = D.events.filter(function (e) { return M.pscale && M.pscale[e.event_key]; });
+    var ownTxt = own.map(function (e) { return e.name + ' – ' + M.pscale[e.event_key].map(function (v, i) { return (i + 1) + ': ' + v; }).join(', '); });
+    var mu = D.events.filter(function (e) { return !(M.pscale && M.pscale[e.event_key]) && M.mult[e.event_key] !== undefined && M.mult[e.event_key] !== 1; }).map(function (e) { return e.name + ' ×' + M.mult[e.event_key]; });
+    return (ms ? 'Mata mengikut tempat – ' : 'Points by place – ') + sc + (mu.length ? (ms ? '. Pengganda: ' : '. Multipliers: ') + mu.join(', ') : '') + (ownTxt.length ? (ms ? '. Mata sendiri: ' : '. Own points: ') + ownTxt.join('; ') : '') + '. ' +
       (R.teamRule === 'medals' ? (ms ? 'Pasukan disusun mengikut pingat dahulu, kemudian mata.' : 'Teams rank by medals first, then points.') : (ms ? 'Pasukan disusun mengikut mata dahulu, kemudian pingat.' : 'Teams rank by points first, then medals.'));
   }
   function key(bd) { return bd.category_id + '|' + bd.event_key; }
@@ -209,7 +211,7 @@
     var L = T(), all = boards.map(counts), n = all.reduce(function (a, c) { return a + c.n; }, 0), d = all.reduce(function (a, c) { return a + c.d; }, 0);
     var kids = [];
     boards.forEach(function (bd) {
-      var top = bd.rows.filter(function (r) { return r.off.rank >= 1 && r.off.rank <= 4; }).sort(function (a, b) { return a.off.rank - b.off.rank; });
+      var top = bd.rows.filter(function (r) { return r.off.rank >= 1 && r.off.rank <= Math.max(4, D.rules.medals || 3); }).sort(function (a, b) { return a.off.rank - b.off.rank; });
       var c = counts(bd);
       kids.push(h('div', { style: 'font-weight:700;font-size:12px;margin:12px 0 4px;text-transform:uppercase', text: bd.event + ' · ' + bd.category + (c.n && c.d === c.n ? '' : '  (' + L.prov.split(' – ')[0] + ')') }));
       if (!top.length) { kids.push(h('div', { class: 'os-note', text: L.none })); return; }
@@ -384,7 +386,7 @@
     });
     var tg = function (label, k) { return h('button', { class: 'lb-chip', type: 'button', id: 'x-' + k, 'aria-pressed': String(!!extra[k]), onClick: function (e) { extra[k] = !extra[k]; e.currentTarget.setAttribute('aria-pressed', String(!!extra[k])); paintSheets(); } }, label); };
     p.replaceChildren.apply(p, [h('h2', { class: 'pm-h', style: 'font-size:24px', text: 'What to print' })].concat(kids, [
-      h('div', { class: 'lb-row' }, tg('Podium (top 4)', 'podium'), tg('Medal table', 'medals'), tg('Medal table: totals only', 'compact'),
+      h('div', { class: 'lb-row' }, tg('Podium (top 4 or 5)', 'podium'), tg('Medal table', 'medals'), tg('Medal table: totals only', 'compact'),
         h('button', { class: 'pm-btn pm-btn--sm', type: 'button', id: 'selall', onClick: function () { D.boards.forEach(function (b) { sel[key(b)] = true; }); buildPick(); paintSheets(); } }, 'Select all'),
         h('button', { class: 'pm-btn pm-btn--sm', type: 'button', id: 'selnone', onClick: function () { D.boards.forEach(function (b) { sel[key(b)] = false; }); buildPick(); paintSheets(); } }, 'Select none')),
       h('div', { class: 'lb-row' }, h('button', { class: 'pm-btn', id: 'print', type: 'button', onClick: function () { window.print(); } }, 'Print / Save as PDF'),

@@ -25,6 +25,7 @@
 .ln-lane{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:22px;white-space:nowrap}
 .ln-mine td{background:#FFF8EA}
 .ln-miss{display:flex;flex-direction:column;gap:4px;font-size:14px}
+.ln-miss .pm-btn{align-self:flex-start}
 </style>
 </head>
 <body>
@@ -176,6 +177,50 @@
     });
   }
 
+  // Admin puts one entry on a lane by hand, or swaps it with another entry.
+  function placeDlg(b, e, cur) {
+    var running = ['live', 'paused'].indexOf(D.tournament.status) >= 0;
+    return new Promise(function (resolve) {
+      var span = b.span || 1, cap = b.share || 0, opts = [], swaps = [];
+      for (var ln = b.lane_from; ln + span - 1 <= b.lane_to; ln++) {
+        var here = b.lots.filter(function (l) { return !l.orphan && l.entry_id !== e.entry_id && l.lane_start <= ln + span - 1 && ln <= l.lane_end; });
+        var full = cap ? here.length >= cap : here.length > 0;
+        if (cur && cur.lane_start === ln) continue;
+        var who = here.map(function (l) { return l.team_code || l.team; }).join(', ');
+        opts.push(h('option', { value: 'L:' + ln, disabled: full, text: 'Lane ' + (span > 1 ? ln + '-' + (ln + span - 1) : ln) + (full ? ' (full: ' + who + ')' : here.length ? ' (with ' + who + ')' : ' (free)') }));
+      }
+      if (cur) b.lots.forEach(function (l) { if (!l.orphan && l.entry_id !== e.entry_id) swaps.push(h('option', { value: 'S:' + l.entry_id, text: l.label + ' · ' + l.team + ' · ' + names(l) })); });
+      var sel = h('select', { class: 'pm-in', id: 'pl-sel' }, h('optgroup', { label: 'Move to lane' }, opts), swaps.length ? h('optgroup', { label: 'Swap places with' }, swaps) : null);
+      var inp = running ? h('input', { class: 'pm-in', id: 'pl-r', type: 'text', maxlength: '120', placeholder: 'For example: lane 3 is out of order', autocomplete: 'off' }) : null;
+      var err = h('p', { style: 'font-size:14px;font-weight:600;color:#B42318', hidden: true, role: 'alert', text: 'A reason is required.' });
+      var dlg = h('dialog', { 'aria-labelledby': 'dlg-t' });
+      var done = function (v) { dlg.close(); dlg.remove(); resolve(v); };
+      dlg.append(h('div', { class: 'dlg' },
+        h('h2', { class: 'pm-h', id: 'dlg-t', style: 'font-size:26px', text: (cur ? 'Move ' : 'Place ') + e.team + (e.entry_no > 1 ? ' ' + e.entry_no : '') }),
+        h('p', { style: 'font-size:15px;color:#33445C', text: names(e) + (cur ? ' · now on lane ' + cur.label : ' · no lane yet') }),
+        h('div', null, h('label', { class: 'pm-lbl', for: 'pl-sel', text: 'Where to' }), sel),
+        inp ? h('div', null, h('label', { class: 'pm-lbl', for: 'pl-r', text: 'Reason (required, goes in the log)' }), inp, err) : null,
+        h('div', { class: 'dlg-act' },
+          h('button', { class: 'pm-btn', type: 'button', onClick: function () { done(null); } }, 'Cancel'),
+          h('button', { class: 'pm-btn pm-btn--pri', type: 'button', onClick: function () {
+            var v = sel.value; if (!v) return;
+            var reason = inp ? inp.value.trim() : '';
+            if (running && reason.length < 3) { err.hidden = false; inp.focus(); return; }
+            done({ lane: v.charAt(0) === 'L' ? Number(v.slice(2)) : null, swap: v.charAt(0) === 'S' ? v.slice(2) : '', reason: reason });
+          } }, 'Save'))));
+      dlg.addEventListener('cancel', function (ev) { ev.preventDefault(); done(null); });
+      document.body.append(dlg); dlg.showModal(); sel.focus();
+    });
+  }
+  function place(b, e, cur) {
+    placeDlg(b, e, cur).then(function (v) {
+      if (!v) return;
+      var p = { block_id: b.block_id, entry_id: e.entry_id, reason: v.reason };
+      if (v.swap) p.swap_entry_id = v.swap; else p.lane = v.lane;
+      run('lanes.move', p, function () { return v.swap ? b.name + ': places swapped.' : b.name + ': placed on lane ' + v.lane + '.'; });
+    });
+  }
+
   var STATE = { drawn: ['Drawn', 'pm-tag--ok'], not_drawn: ['Not drawn', 'pm-tag--warn'], needs_check: ['Draw needs checking', 'pm-tag--warn'], empty: ['No entries', ''], 'n/a': ['Set after All Events', ''] };
   function tag(text, cls) { return h('span', { class: 'pm-tag' + (cls ? ' ' + cls : ''), text: text }); }
   function stat(n, l) { return h('div', null, h('b', { text: String(n) }), h('span', { text: l })); }
@@ -183,6 +228,7 @@
 
   function blockCard(b) {
     var bad = b.state === 'needs_check';
+    var canEdit = admin && D.locked_at && D.can_lock && !b.scored && b.state !== 'n/a';
     var sv = STATE[b.state] || ['', ''];
     var kids = [h('div', { class: 'ln-hd' },
       h('h3', { text: b.name }),
@@ -191,20 +237,21 @@
     if (b.entries_n || b.lots.length) kids.push(h('p', { class: 'pm-help', style: 'margin:0', text: b.entries_n + (b.entries_n === 1 ? ' entry' : ' entries') + ' · ' + b.lanes_needed + ' of ' + b.lanes_have + ' lanes needed' + (b.lanes_needed > b.lanes_have ? ' (not enough lanes: change the lanes in Setup)' : '') }));
     if (b.lots.length) {
       kids.push(h('table', { class: 'pm-tbl' },
-        h('thead', null, h('tr', null, h('th', { text: 'Lot' }), h('th', { text: 'Lane' }), h('th', { text: 'Team' }), h('th', { text: 'Bowlers' }))),
+        h('thead', null, h('tr', null, h('th', { text: 'Lot' }), h('th', { text: 'Lane' }), h('th', { text: 'Team' }), h('th', { text: 'Bowlers' }), canEdit ? h('th', { text: '' }) : null)),
         h('tbody', null, b.lots.map(function (l) {
           var mine = user.role === 'team_manager' && l.team_id === user.team_id;
           return h('tr', { class: (l.orphan ? 'off ' : '') + (mine ? 'ln-mine' : '') },
             h('td', { 'data-l': 'Lot', text: String(l.lot_no) }),
             h('td', { 'data-l': 'Lane' }, h('span', { class: 'ln-lane', text: l.label })),
             h('td', { 'data-l': 'Team' }, l.team || '—', mine ? ' ' : null, mine ? tag('Your team') : null),
-            h('td', { 'data-l': 'Bowlers' }, names(l), l.orphan ? ' ' : null, l.orphan ? tag('No longer entered', 'pm-tag--off') : null));
+            h('td', { 'data-l': 'Bowlers' }, names(l), l.orphan ? ' ' : null, l.orphan ? tag('No longer entered', 'pm-tag--off') : null),
+            canEdit && !l.orphan ? h('td', { 'data-l': '' }, h('button', { class: 'pm-btn pm-btn--sm', type: 'button', disabled: busy, 'aria-label': 'Move ' + l.team + ' ' + l.label, onClick: function () { place(b, l, l); } }, 'Move')) : (canEdit ? h('td') : null));
         }))));
     }
     if (b.missing.length) {
       kids.push(h('div', { class: 'pm-msg pm-msg--warn' },
         h('div', { text: 'No lane yet for ' + b.missing.length + (b.missing.length === 1 ? ' entry:' : ' entries:') }),
-        h('div', { class: 'ln-miss' }, b.missing.map(function (e) { return h('span', { text: e.team + ' · ' + names(e) }); }))));
+        h('div', { class: 'ln-miss' }, b.missing.map(function (e) { return canEdit ? h('button', { class: 'pm-btn pm-btn--sm', type: 'button', disabled: busy, onClick: function () { place(b, e, null); } }, 'Place ' + e.team + ' · ' + names(e)) : h('span', { text: e.team + ' · ' + names(e) }); }))));
     }
     if (b.orphan) kids.push(h('div', { class: 'pm-msg pm-msg--warn', text: b.orphan + (b.orphan === 1 ? ' lane belongs' : ' lanes belong') + ' to an entry that has changed. Fill the gaps to free ' + (b.orphan === 1 ? 'it.' : 'them.') }));
     if (admin && D.locked_at && D.can_lock) {
