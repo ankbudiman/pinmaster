@@ -910,9 +910,9 @@ class Component extends DCLogic {
     const fCatObj = catBy[f.catId];
     const setF = (patch) => this.setState((st) => ({ form: Object.assign({}, st.form, patch), srvErr: '' }));
     const onF = { name: (e) => setF({ name: e.target.value }), ic: (e) => setF({ ic: e.target.value }), dob: (e) => setF({ dob: e.target.value }) };
-    const catPick = cats.map((c) => ({ label: c.name, on: f.catId === c.category_id, off: isEdit, cls: 'pm-chip' + (f.catId === c.category_id ? ' pm-chip--on' : ''), pick: () => setF({ catId: c.category_id, ev: evDefaults(), tm: {}, partner: '' }) }));
+    const catPick = cats.map((c) => ({ label: c.name, on: f.catId === c.category_id, off: isEdit, cls: 'pm-chip' + (f.catId === c.category_id ? ' pm-chip--on' : ''), pick: () => setF({ catId: c.category_id, ev: Object.keys(evDefaults()).reduce((o, k) => { if ((c.off || []).indexOf(k) < 0) o[k] = evDefaults()[k]; return o; }, {}), tm: {}, partner: '' }) }));
     const teamPick = teams.filter((tm) => tm.status === 'active' || tm.team_id === f.teamId).map((tm) => ({ label: tm.name, on: f.teamId === tm.team_id, off: isMgr || (isEdit && !isAdmin), cls: 'pm-chip' + (f.teamId === tm.team_id ? ' pm-chip--on' : ''), pick: () => setF({ teamId: tm.team_id, tm: {}, partner: '' }) }));
-    const evPick = fCatObj ? EV.map((x) => { const k = x.event_key; return { label: x.name, on: !!f.ev[k], cls: 'pm-chip' + (f.ev[k] ? ' pm-chip--on' : ''),
+    const evPick = fCatObj ? EV.filter((x) => (fCatObj.off || []).indexOf(x.event_key) < 0).map((x) => { const k = x.event_key; return { label: x.name, on: !!f.ev[k], cls: 'pm-chip' + (f.ev[k] ? ' pm-chip--on' : ''),
       toggle: () => setF({ ev: Object.assign({}, f.ev, { [k]: !f.ev[k] }), tm: f.ev[k] ? Object.assign({}, f.tm, { [k]: false }) : f.tm, partner: k === 'd' && f.ev.d ? '' : f.partner }) }; }) : [];
     // Team events: one entry per team, category and event. The bowler is either in that team or not yet.
     const tmRows = fCatObj && f.teamId ? TV.filter((x) => f.ev[x.event_key]).map((x) => {
@@ -938,7 +938,8 @@ class Component extends DCLogic {
     const cur = s.panel === 'sub' ? sv : fv;
     const errAll = cur.errs.concat(s.srvErr ? [s.srvErr] : []);
     const showErrs = s.tried && errAll.length > 0;
-    const evArgs = () => ({ ev: EV.filter((x) => f.ev[x.event_key]).map((x) => x.event_key), team: TV.filter((x) => f.ev[x.event_key] && f.tm[x.event_key]).map((x) => x.event_key) });
+    const plays = (x) => !fCatObj || (fCatObj.off || []).indexOf(x.event_key) < 0;
+    const evArgs = () => ({ ev: EV.filter((x) => f.ev[x.event_key] && plays(x)).map((x) => x.event_key), team: TV.filter((x) => plays(x) && f.ev[x.event_key] && f.tm[x.event_key]).map((x) => x.event_key) });
     const saveAthlete = () => {
       if (s.busy) return;
       if (fv.errs.length) { this.setState({ tried: true }); return; }
@@ -985,6 +986,7 @@ class Component extends DCLogic {
             if (x) { if (evList.indexOf(x.event_key) < 0) evList.push(x.event_key); } else evErr = 'Unknown or unavailable event "' + tok + '".';
           });
         }
+        if (cat && evList) { const nope = evList.filter((k) => (cat.off || []).indexOf(k) >= 0); if (nope.length) evErr = cat.name + ' does not play ' + nope.map((k) => (EV.find((e) => e.event_key === k) || {}).name || k).join(', ') + '.'; }
         let msg = '', bad = false, warn = false;
         if (!cat) { bad = true; msg = c[3] ? 'No category called "' + c[3] + '" in this tournament.' : 'Category is missing.'; }
         else if (!team) { bad = true; msg = teamRaw ? 'Unknown team "' + teamRaw + '".' : 'Team is missing.'; }

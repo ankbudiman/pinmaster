@@ -569,6 +569,9 @@ h1,h2,h3,p{margin:0}
                   <span style="font-size: 17px; font-weight: 600">{{e.label}}</span>
                   <span style="font-size: 14px; color: #44546A; line-height: 1.4">{{e.own}}</span>
                 </div>
+                <sc-if value="{{e.canToggle}}" hint-placeholder-val="{{ true }}">
+                  <button class="{{e.playCls}}" onClick="{{e.playToggle}}" disabled="{{ro}}" aria-pressed="{{e.playOn}}" aria-label="{{e.playAria}}">{{e.playLabel}}</button>
+                </sc-if>
                 <sc-if value="{{e.off}}" hint-placeholder-val="{{ false }}">
                   <span style="min-width: 128px; text-align: center; font-size: 15px; font-weight: 600; color: #44546A">Not played</span>
                 </sc-if>
@@ -1074,7 +1077,7 @@ class Component extends DCLogic {
     cfg.lanes = tr.lanes || cfg.lanes || 24;
     cfg.perLane = tr.per_lane || cfg.perLane || 2;
     cfg.cats = d.categories.map((c) => ({ id: c.category_id, name: c.name, games: (c.games_json && c.games_json.games) || 6,
-      ev: (c.games_json && c.games_json.ev) || { s: null, d: null }, mq: c.masters_qualifiers == null ? 8 : c.masters_qualifiers }));
+      ev: (c.games_json && c.games_json.ev) || { s: null, d: null }, off: (c.games_json && Array.isArray(c.games_json.off)) ? c.games_json.off.slice() : [], mq: c.masters_qualifiers == null ? 8 : c.masters_qualifiers }));
     const teams = d.teams.map((k) => ({ id: k.team_id, code: k.code, name: k.name, mn: k.manager_name || '', me: k.manager_email || '', off: k.status === 'withdrawn' }));
     const who = (a) => a || 'Admin';
     const secName = { tournament: 'details and rules', events: 'events', categories: 'categories', blocks: 'schedule', teams: 'teams' };
@@ -1115,7 +1118,7 @@ class Component extends DCLogic {
     return {
       tournament: { name: String(d.name || '').trim(), code: d.code, start_date: d.start, end_date: d.end, venue: d.venue, lanes: isNaN(ln) ? '' : ln, per_lane: c.perLane, cfg: cfgOut },
       events: ev,
-      categories: c.cats.map((k, i) => ({ category_id: k.id, name: k.name, sort_order: i + 1, games_json: { games: k.games, ev: k.ev }, masters_qualifiers: k.mq })),
+      categories: c.cats.map((k, i) => ({ category_id: k.id, name: k.name, sort_order: i + 1, games_json: (k.off && k.off.length) ? { games: k.games, ev: k.ev, off: k.off } : { games: k.games, ev: k.ev }, masters_qualifiers: k.mq })),
       blocks: v.blocks.map((b) => ({ block_id: b.id, day: b.day, name: b.name, start_time: b.start, category_id: b.catId, event_key: b.evKey, from_game: 1, to_game: b.games, games: b.games, lane_from: b.from, lane_to: b.to })),
       teams: v.teams.map((k) => ({ team_id: k.id, code: k.code, name: k.name, manager_name: k.mn || '', manager_email: k.me || '', player_limit: v.limit, status: k.off ? 'withdrawn' : 'active' }))
     };
@@ -1381,6 +1384,7 @@ class Component extends DCLogic {
       const qTot = c.cats.reduce((a, x) => a + x.mq, 0);
       const gamesText = c.cats.length ? c.cats.map((x) => { const parts = ak.filter((k) => x.ev[k] != null && x.ev[k] !== x.games).map((k) => NM[k] + ' ' + x.ev[k]); return x.name + ' ' + x.games + (parts.length ? ' (' + parts.join(', ') + ')' : ''); }).join(' · ') : 'No categories yet';
       const mqText = c.cats.map((x) => x.name + ' ' + x.mq).join(' · ');
+      const catEvText = c.cats.length ? c.cats.map((x) => x.name + ': ' + (((x.off || []).length === 0) ? 'every event' : (ak.filter((k) => c.ev[k] && (x.off || []).indexOf(k) < 0).map((k) => NM[k]).join(', ') || 'none'))).join('; ') : 'No categories';
       const tbText = c.tb.map((k) => TBN[k]).concat(['Admin roll-off']).join(', then ');
       const dir = c.moveDir === 'alt' ? 'alternating direction' : 'all toward higher lanes';
       const move = c.movePair === 0 && c.moveTeam === 0 ? 'No movement' : 'Pairs ' + plural(c.movePair, 'lane') + ', teams ' + plural(c.moveTeam, 'lane') + ', every ' + plural(c.moveEvery, 'game') + ', ' + dir;
@@ -1396,6 +1400,7 @@ class Component extends DCLogic {
           { k: 'games', label: 'Games per event', val: gamesText, risky: true },
           { k: 'tev', label: 'Team events', val: teamText, risky: true },
           { k: 'allIn', label: 'All Events counts', val: allText, risky: true },
+          { k: 'catev', label: 'Events each category plays', val: catEvText, risky: true },
           { k: 'from', label: 'Singles scores', val: c.from && c.from.s === 'd' ? 'Taken from the Doubles games (no Singles block)' : 'Own games', risky: true }
         ] },
         { title: 'SCORING AND TIES', rows: [
@@ -1566,7 +1571,7 @@ class Component extends DCLogic {
     const allGames = (x) => akNow.reduce((a, k) => a + effG(x, k), 0);
     const catCards = cats.map((c) => ({
       name: c.name,
-      summary: evKeys.length === 0 ? 'No events switched on yet' : plural(evKeys.length, 'event') + ' · ' + plural(c.games, 'default game'),
+      summary: evKeys.length === 0 ? 'No events switched on yet' : plural(evKeys.filter((k) => (c.off || []).indexOf(k) < 0).length, 'event') + ' · ' + plural(c.games, 'default game'),
       remove: () => { if (((t.usage || {}).categories || {})[c.id] > 0) { this.setState({ errText: c.name + ' already has athletes or entries, so it cannot be removed.', errReload: false }); return; } updT((x) => Object.assign({}, x, {
         cfg: Object.assign({}, x.cfg, { cats: x.cfg.cats.filter((k) => k.id !== c.id), groups: Object.keys(x.cfg.groups || {}).reduce((o, key) => { o[key] = (x.cfg.groups[key] || []).map((g) => g.filter((i) => i !== c.id)).filter((g) => g.length); return o; }, {}) }),
         blocks: x.blocks.filter((b) => b.catId !== c.id)
@@ -1578,10 +1583,13 @@ class Component extends DCLogic {
       gdecOff: ro || c.games <= 1, gincOff: ro || c.games >= 12,
       gdecAria: 'Fewer default games for ' + c.name, gincAria: 'More default games for ' + c.name,
       cells: evAll.map((k) => {
-        const v = effG(c, k), over = c.ev[k] != null;
+        const v = effG(c, k), over = c.ev[k] != null, played = (c.off || []).indexOf(k) < 0;
         const setV = (nv) => updCat(c.id, (q) => Object.assign({}, q, { ev: Object.assign({}, q.ev, { [k]: nv === q.games ? null : nv }) }));
         return {
-          label: EVN[k], live: !!cfg.ev[k], off: !cfg.ev[k], val: plural(v, 'game'), over, own: !cfg.ev[k] ? 'Switch it on above to schedule it.' : over ? 'This event has its own number of games.' : 'Uses the default games.',
+          label: EVN[k], live: !!cfg.ev[k] && played, off: !cfg.ev[k] || !played, val: plural(v, 'game'), over,
+          own: !cfg.ev[k] ? 'Switch it on above to schedule it.' : !played ? 'This category does not play this event. No bowlers can be entered in it and no block can be scheduled.' : over ? 'This event has its own number of games.' : 'Uses the default games.',
+          canToggle: !!cfg.ev[k] && k !== 'm', playLabel: played ? 'Played' : 'Not played', playOn: played, playCls: 'pm-chip' + (played ? ' pm-chip--on' : ''), playAria: (played ? 'Stop ' : 'Start ') + c.name + ' playing ' + EVN[k],
+          playToggle: () => updCat(c.id, (q) => Object.assign({}, q, { off: played ? (q.off || []).concat([k]) : (q.off || []).filter((x) => x !== k) })),
           dec: () => { if (v > 1) setV(v - 1); }, inc: () => { if (v < 12) setV(v + 1); },
           decOff: ro || v <= 1, incOff: ro || v >= 12,
           reset: () => updCat(c.id, (q) => Object.assign({}, q, { ev: Object.assign({}, q.ev, { [k]: null }) })),
@@ -1602,7 +1610,7 @@ class Component extends DCLogic {
       const src = s.copyFrom ? cats.find((c) => c.id === s.copyFrom) : null;
       updT((x) => {
         const id = 'c' + x.nid;
-        const nc = { id, name: newName, games: src ? src.games : 6, ev: src ? Object.assign({}, src.ev) : { s: null, d: null }, mq: src ? src.mq : 8 };
+        const nc = { id, name: newName, games: src ? src.games : 6, ev: src ? Object.assign({}, src.ev) : { s: null, d: null }, off: src ? (src.off || []).slice() : [], mq: src ? src.mq : 8 };
         return Object.assign({}, x, { nid: x.nid + 1, cfg: Object.assign({}, x.cfg, { cats: x.cfg.cats.concat([nc]) }) });
       });
       this.setState({ newCat: '', copyFrom: '' });
