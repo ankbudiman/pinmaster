@@ -235,16 +235,16 @@ h1,h2,h3,p{margin:0}
             <div class="pm-tblwrap" style="overflow-x: auto">
               <div style="min-width: 840px" role="table" aria-label="Registered athletes">
                 <div class="pm-g pm-g--h" role="row">
-                  <span role="columnheader">NAME AND ID</span><span role="columnheader">BORN</span><span role="columnheader">CATEGORY</span><span role="columnheader">TEAM</span><span role="columnheader">EVENTS</span><span role="columnheader">STATUS</span><span role="columnheader">ACTIONS</span>
+                  <span role="columnheader">NAME</span><span role="columnheader">BORN</span><span role="columnheader">CATEGORY</span><span role="columnheader">TEAM</span><span role="columnheader">EVENTS</span><span role="columnheader">STATUS</span><span role="columnheader">ACTIONS</span>
                 </div>
                 <sc-for list="{{rows}}" as="a" hint-placeholder-count="6">
                   <div class="pm-g" role="row">
                     <div role="cell" style="min-width: 0">
                       <strong style="display: block; font-size: 15px; overflow-wrap: anywhere">{{a.name}}</strong>
-                      <span style="font-size: 12px; font-weight: 700; color: #1F2E45">{{a.pid}}</span><span style="font-size: 12px; color: #44546A"> · {{a.ic}}</span>
+                      <span style="font-size: 12px; font-weight: 700; color: #1F2E45">{{a.pid}}</span>
                       <sc-if value="{{a.hasNote}}"><span style="display: block; font-size: 12px; color: #8A1C12; margin-top: 2px">{{a.note}}</span></sc-if>
                     </div>
-                    <div role="cell"><span>{{a.dob}}</span><span style="display: block; font-size: 12px; color: #44546A">Age {{a.age}}</span></div>
+                    <div role="cell"><span>{{a.dob}}</span><span style="display: block; font-size: 12px; color: #44546A">{{a.ageText}}</span></div>
                     <div role="cell">{{a.catName}}</div>
                     <div role="cell">{{a.team}}</div>
                     <div role="cell" style="min-width: 0">
@@ -274,7 +274,7 @@ h1,h2,h3,p{margin:0}
                 </div>
                 <span style="font-size: 15px; color: #33445C">{{a.pid}} · {{a.catName}} · {{a.team}}</span>
                 <sc-if value="{{a.showPrivate}}">
-                  <span style="font-size: 14px; color: #44546A">{{a.ic}} · Born {{a.dob}} (age {{a.age}})</span>
+                  <span style="font-size: 14px; color: #44546A">{{a.bornText}}</span>
                 </sc-if>
                 <sc-if value="{{a.showPrivate}}">
                   <span style="font-size: 14px; color: #33445C">{{a.evText}}</span>
@@ -328,12 +328,8 @@ h1,h2,h3,p{margin:0}
                 <input class="pm-in" id="a-name" type="text" value="{{form.name}}" onInput="{{onF.name}}" autocomplete="off">
               </div>
               <div style="display: flex; flex-wrap: wrap; gap: 12px">
-                <div style="flex: 1 1 170px; min-width: 0">
-                  <label class="pm-lbl" for="a-ic">ID or passport no.</label>
-                  <input class="pm-in" id="a-ic" type="text" value="{{form.ic}}" onInput="{{onF.ic}}" placeholder="150304-10-5541" autocomplete="off">
-                </div>
                 <div style="flex: 1 1 150px; min-width: 0">
-                  <label class="pm-lbl" for="a-dob">Date of birth</label>
+                  <label class="pm-lbl" for="a-dob">Date of birth (optional)</label>
                   <input class="pm-in" id="a-dob" type="date" value="{{form.dob}}" onInput="{{onF.dob}}">
                 </div>
               </div>
@@ -446,12 +442,8 @@ h1,h2,h3,p{margin:0}
                 <input class="pm-in" id="s-name" type="text" value="{{sub.name}}" onInput="{{onSub.name}}" autocomplete="off">
               </div>
               <div style="display: flex; flex-wrap: wrap; gap: 12px">
-                <div style="flex: 1 1 170px; min-width: 0">
-                  <label class="pm-lbl" for="s-ic">ID or passport no.</label>
-                  <input class="pm-in" id="s-ic" type="text" value="{{sub.ic}}" onInput="{{onSub.ic}}" autocomplete="off">
-                </div>
                 <div style="flex: 1 1 150px; min-width: 0">
-                  <label class="pm-lbl" for="s-dob">Date of birth</label>
+                  <label class="pm-lbl" for="s-dob">Date of birth (optional)</label>
                   <input class="pm-in" id="s-dob" type="date" value="{{sub.dob}}" onInput="{{onSub.dob}}">
                 </div>
               </div>
@@ -492,7 +484,7 @@ h1,h2,h3,p{margin:0}
         <section style="flex: 1 1 380px; min-width: 0; background: #fff; border: 1px solid #D5DBE4; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
           <div>
             <h2 style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.3px">Paste rows from Excel or CSV</h2>
-            <p style="font-size: 15px; color: #44546A; margin-top: 4px; line-height: 1.45">Copy the cells in Excel and paste them here. One bowler per line. Columns, in this order: name, ID, date of birth, category, team, events. Events is optional and defaults to Singles and Doubles.</p>
+            <p style="font-size: 15px; color: #44546A; margin-top: 4px; line-height: 1.45">Copy the cells in Excel and paste them here. One bowler per line. Columns, in this order: name, category, team, events, date of birth. Events and date of birth are optional. Events default to Singles and Doubles.</p>
           </div>
           <div>
             <label class="pm-lbl" for="i-text">Rows</label>
@@ -813,19 +805,18 @@ class Component extends DCLogic {
       const errs = [], warns = [];
       const list = ath.filter((a) => a.active).concat(extra || []);
       if (!String(p.name || '').trim()) errs.push('Enter the full name.');
-      if (!String(p.ic || '').trim()) errs.push('Enter the ID or passport number.');
       const dm = ms(p.dob);
-      if (!p.dob || isNaN(dm)) errs.push('Enter a valid date of birth.');
-      else if (dm > now) errs.push('The date of birth is in the future.');
+      if (p.dob && isNaN(dm)) errs.push('Enter a valid date of birth, or leave it empty.');
+      else if (p.dob && dm > now) errs.push('The date of birth is in the future.');
       if (!p.catId) errs.push('Pick a category.');
       if (!p.teamId) errs.push('Pick a team.');
-      if (String(p.ic || '').trim()) {
-        const x = list.find((a) => a.id !== selfId && norm(a.ic) === norm(p.ic));
-        if (x) errs.push('ID ' + String(p.ic).trim() + ' is already registered' + (isAdmin || x.teamId === myTeam ? ' for ' + x.name + ' (' + tName(x.teamId) + ').' : ' by another team.'));
-      }
-      if (String(p.name || '').trim() && p.dob) {
-        const x = list.find((a) => a.id !== selfId && a.dob === p.dob && a.name.trim().toLowerCase() === String(p.name).trim().toLowerCase() && norm(a.ic) !== norm(p.ic));
-        if (x) errs.push('Same name and date of birth as an existing bowler with a different ID. Check for a typo.');
+      if (String(p.name || '').trim()) {
+        const nm = String(p.name).trim().replace(/\s+/g, ' ').toLowerCase();
+        list.forEach((a) => {
+          if (a.id === selfId || a.name.trim().replace(/\s+/g, ' ').toLowerCase() !== nm || errs.length > 3) return;
+          if (p.teamId && a.teamId === p.teamId) errs.push(a.name + ' is already registered for ' + tName(a.teamId) + '. If this is a different person, add something to the name, such as the father\'s initial.');
+          else if (p.dob && a.dob === p.dob) errs.push('Same name and date of birth as a bowler already registered' + (isAdmin ? ' for ' + tName(a.teamId) : ' by another team') + '.');
+        });
       }
       const cat = catBy[p.catId];
       if (cat && p.teamId) {
@@ -835,11 +826,6 @@ class Component extends DCLogic {
       const age = ageOn(p.dob, refDate);
       const m = cat ? /U(\d+)/i.exec(cat.name) : null;
       if (m && age !== null && age >= parseInt(m[1], 10)) warns.push(String(p.name || 'This bowler').trim() + ' is ' + age + ' on the first day. ' + cat.name + ' is for under ' + m[1] + '.');
-      const icm = /^(\d{2})(\d{2})(\d{2})-?\d{2}-?\d{4}$/.exec(String(p.ic || '').trim());
-      if (icm && p.dob && !isNaN(dm)) {
-        const want = p.dob.slice(2, 4) + p.dob.slice(5, 7) + p.dob.slice(8, 10);
-        if (icm[1] + icm[2] + icm[3] !== want) warns.push('The ID number starts with ' + icm[1] + icm[2] + icm[3] + ', which does not match the date of birth.');
-      }
       return { errs, warns };
     };
 
@@ -886,7 +872,7 @@ class Component extends DCLogic {
       const can = canChangeAth(a) && a.active;
       const canRestore = isAdmin && !a.active && !a.out;
       const age = ageOn(a.dob, refDate);
-      return { name: a.name, pid: a.pid || '', ic: a.ic, dob: isNaN(ms(a.dob)) ? '' : fmtD(ms(a.dob)), age: age === null ? '' : age,
+      return { name: a.name, pid: a.pid || '', ic: a.ic, dob: isNaN(ms(a.dob)) ? '' : fmtD(ms(a.dob)), age: age === null ? '' : age, ageText: age === null ? '' : 'Age ' + age, bornText: age === null ? 'Date of birth not given' : 'Born ' + fmtD(ms(a.dob)) + ' (age ' + age + ')',
         catName: catName(a.catId), team: tName(a.teamId), evText: evText(a), hasPartner: !!partner, partnerName: partner ? partner.name : '',
         status: a.active ? 'Active' : 'Withdrawn', stCls: 'pm-st ' + (a.active ? 'pm-st--open' : 'pm-st--draft'),
         note: a.note || (a.active && !isMar ? (a.lock === 'scored' ? 'Has bowled. Only the Admin can change this bowler.' : a.lock === 'drawn' ? 'On the lane draw. A change is flagged for the Admin.' : '') : ''),
@@ -974,31 +960,31 @@ class Component extends DCLogic {
         const delim = line.indexOf('\t') >= 0 ? '\t' : ',';
         const c = line.split(delim).map((x) => x.trim());
         if (/^name$/i.test(c[0])) return;
-        const cat = cats.find((k) => k.name.toLowerCase() === (c[3] || '').toLowerCase());
-        const teamRaw = c[4] || (isMgr ? myTeamName : '');
+        const cat = cats.find((k) => k.name.toLowerCase() === (c[1] || '').toLowerCase());
+        const teamRaw = c[2] || (isMgr ? myTeamName : '');
         const team = teams.find((x) => x.name.toLowerCase() === teamRaw.toLowerCase() || x.code.toLowerCase() === teamRaw.toLowerCase());
-        const dob = parseDob(c[2] || '');
+        const dob = parseDob(c[4] || '');
         let evList = null, evErr = '';
-        if (c[5]) {
+        if (c[3]) {
           evList = [];
-          c[5].split(/[;|\/]/).map((x) => x.trim().toLowerCase()).filter(Boolean).forEach((tok) => {
+          c[3].split(/[;|\/]/).map((x) => x.trim().toLowerCase()).filter(Boolean).forEach((tok) => {
             const x = EV.find((e) => e.name.toLowerCase().indexOf(tok.slice(0, 4)) === 0 || e.name.toLowerCase().indexOf(tok) === 0);
             if (x) { if (evList.indexOf(x.event_key) < 0) evList.push(x.event_key); } else evErr = 'Unknown or unavailable event "' + tok + '".';
           });
         }
         if (cat && evList) { const nope = evList.filter((k) => (cat.off || []).indexOf(k) >= 0); if (nope.length) evErr = cat.name + ' does not play ' + nope.map((k) => (EV.find((e) => e.event_key === k) || {}).name || k).join(', ') + '.'; }
         let msg = '', bad = false, warn = false;
-        if (!cat) { bad = true; msg = c[3] ? 'No category called "' + c[3] + '" in this tournament.' : 'Category is missing.'; }
+        if (!cat) { bad = true; msg = c[1] ? 'No category called "' + c[1] + '" in this tournament.' : 'Category is missing.'; }
         else if (!team) { bad = true; msg = teamRaw ? 'Unknown team "' + teamRaw + '".' : 'Team is missing.'; }
         else if (isMgr && team.team_id !== myTeam) { bad = true; msg = 'This is not your team. Managers can import ' + myTeamName + ' only.'; }
         else if (evErr) { bad = true; msg = evErr; }
         else {
-          const v = validate({ name: c[0] || '', ic: c[1] || '', dob, catId: cat.category_id, teamId: team.team_id }, '', accepted);
+          const v = validate({ name: c[0] || '', dob, catId: cat.category_id, teamId: team.team_id }, '', accepted);
           if (v.errs.length) { bad = true; msg = v.errs[0]; }
           else if (v.warns.length) { warn = true; msg = v.warns[0]; }
         }
-        if (!bad) accepted.push({ id: 'imp' + accepted.length, name: c[0], ic: c[1], dob, catId: cat.category_id, teamId: team.team_id, ev: {}, tm: {}, partner: '', active: true, line: i, events: evList });
-        out.push({ line: i + 1, name: c[0] || '(no name)', detail: [c[1], cat ? cat.name : c[3], team ? team.name : c[4]].filter(Boolean).join(' · '),
+        if (!bad) accepted.push({ id: 'imp' + accepted.length, name: c[0], dob, catId: cat.category_id, teamId: team.team_id, ev: {}, tm: {}, partner: '', active: true, line: i, events: evList });
+        out.push({ line: i + 1, name: c[0] || '(no name)', detail: [cat ? cat.name : c[1], team ? team.name : c[2]].filter(Boolean).join(' · '),
           label: bad ? 'Skipped' : warn ? 'Ready, check' : 'Ready', cls: 'pm-st ' + (bad ? 'pm-st--live' : warn ? 'pm-st--warn' : 'pm-st--open'),
           msg, hasMsg: !!msg, msgColor: bad ? '#B42318' : '#6B4400', bad, raw: i });
       });
@@ -1009,7 +995,7 @@ class Component extends DCLogic {
     const doImport = () => {
       if (s.busy || !parsed.accepted.length) return;
       const sent = parsed.accepted;
-      const payload = sent.map((a) => { const o = { name: a.name, id: a.ic, dob: a.dob, category_id: a.catId, team_id: a.teamId }; if (a.events) o.events = a.events; return o; });
+      const payload = sent.map((a) => { const o = { name: a.name, dob: a.dob, category_id: a.catId, team_id: a.teamId }; if (a.events) o.events = a.events; return o; });
       this.act('participants.import', { rows: payload }, () => '', (r) => {
         const failed = {}; let svErr = 0;
         r.results.forEach((x, i) => { if (x.status === 'error') { failed[sent[i].line] = true; svErr++; } });
@@ -1025,11 +1011,11 @@ class Component extends DCLogic {
       if (!cats.length || !teams.length) return;
       const c0 = cats[0].name, c1 = (cats[1] || cats[0]).name;
       const mine = isMgr ? myTeamName : teams[0].name;
-      this.setState({ importText: ['name,id,date of birth,category,team,events',
-        'Imran Shah,150611-10-5099,2015-06-11,' + c0 + ',' + mine + ',singles;doubles',
-        'Lee Jia Hui,160309-14-5204,09/03/2016,' + c1 + ',' + mine + ',',
-        'Hana Zulkifli,150101-10-5010,2015-01-01,No Such Category,' + mine + ',',
-        'Tan Wei Ming,140215-10-5612,2014-02-15,' + c0 + ',' + mine + ',singles'].join('\n') });
+      this.setState({ importText: ['name,category,team,events,date of birth',
+        'Imran Shah,' + c0 + ',' + mine + ',singles;doubles,',
+        'Lee Jia Hui,' + c1 + ',' + mine + ',,09/03/2016',
+        'Hana Zulkifli,No Such Category,' + mine + ',,',
+        'Tan Wei Ming,' + c0 + ',' + mine + ',singles,'].join('\n') });
     };
 
     // ---------- Pairing tab ----------
@@ -1055,7 +1041,7 @@ class Component extends DCLogic {
     const pRows = pGrp.map((a) => {
       const hasD = !!a.ev.d, cur = pPartner(a);
       const opts = [{ v: '', label: 'No partner' }].concat(pGrp.filter((x) => x.id !== a.id && x.ev.d).map((x) => ({ v: x.id, label: x.name + ' (' + x.pid + ')' })));
-      return { name: a.name, pid: a.pid + ' · age ' + (ageOn(a.dob, TODAY) === null ? '' : ageOn(a.dob, TODAY)), hasD, partner: cur, opts, off: !canChangeAth(a),
+      return { name: a.name, pid: a.pid + (ageOn(a.dob, TODAY) === null ? '' : ' · age ' + ageOn(a.dob, TODAY)), hasD, partner: cur, opts, off: !canChangeAth(a),
         onPartner: (e) => setPartnerD(a.id, e.target.value),
         tchips: TV.filter((x) => a.ev[x.event_key]).map((x) => { const on = pMembers(x.event_key).indexOf(a.id) >= 0;
           return { label: x.name + (on ? ': in team' : ': not in team'), on, cls: 'pm-chip' + (on ? ' pm-chip--on' : ''), pick: () => togT(a.id, x.event_key, x.size, x.name) }; }) };
@@ -1121,7 +1107,7 @@ class Component extends DCLogic {
       errText: s.errText, clearErr: () => this.setState({ errText: '' }), busy: s.busy,
       canAdd, openAdd, goImport: () => this.setState({ tab: 'import', panel: 'none', msg: '', errText: '' }), tabs,
       isAthletes: tab === 'athletes', isImport: tab === 'import', isTeams: tab === 'teams', isPairing: tab === 'pairing', showPTeam: !isMgr, pTeamChips, pCatChips, pRows, pHasRows: pRows.length > 0, pNoRows: pRows.length === 0, pSummary, pErr: s.pErr, pSaveOff: s.busy || !pDirty, pSaveLabel: s.busy ? 'Saving...' : 'Save pairing', pSave, pReset: () => this.setState({ pDraft: null, pErr: '' }), isLog: tab === 'log',
-      tiles, listTitle, q: s.q, onQ: (e) => this.setState({ q: e.target.value }), searchExtra: isMar ? '' : ' or ID', catFilter, teamFilter, statusFilter, showTeamFilter: !isMgr, countLine,
+      tiles, listTitle, q: s.q, onQ: (e) => this.setState({ q: e.target.value }), searchExtra: ' or player code', catFilter, teamFilter, statusFilter, showTeamFilter: !isMgr, countLine,
       rows, noRows: rows.length === 0, emptyMsg,
       tblCls: 'pm-tbl' + (isMar ? ' pm-tbl--off' : ''), cardsCls: 'pm-cards' + (isMar ? ' pm-cards--on' : ''),
       showSummary: !showForm && !showWd && !showSub, limitTxt, limitNote: 'Set by the Admin in Tournament setup. Adding a bowler over the limit is blocked for everyone.',
