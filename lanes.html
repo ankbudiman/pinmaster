@@ -236,12 +236,12 @@
         if (x.cur) opts.shift();
         var sel = h('select', { class: 'pm-in', 'aria-label': 'Lane for ' + x.e.team + ' ' + names(x.e), style: 'min-width:130px' }, opts);
         sel.addEventListener('change', check); sels.push(sel);
-        return h('tr', null, h('td', { text: x.e.team + (x.e.entry_no > 1 ? ' ' + x.e.entry_no : '') }), h('td', { text: names(x.e) }), h('td', null, sel));
+        return h('div', { style: 'display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:10px 12px;border-bottom:1px solid #D5DBE4' }, h('div', { style: 'flex:1 1 240px;min-width:0' }, h('div', { style: 'font-weight:700', text: x.e.team + (x.e.entry_no > 1 ? ' ' + x.e.entry_no : '') }), h('div', { style: 'font-size:14px;color:#33445C', text: names(x.e) })), sel);
       });
       var msg = h('p', { style: 'font-size:14px;font-weight:600;min-height:20px', role: 'status' });
       var inp = running ? h('input', { class: 'pm-in', type: 'text', maxlength: '120', placeholder: 'For example: lane 3 is out of order', autocomplete: 'off', 'aria-label': 'Reason' }) : null;
       var save = h('button', { class: 'pm-btn pm-btn--pri', type: 'button' }, 'Save all');
-      var dlg = h('dialog', { 'aria-labelledby': 'dlg-t' });
+      var dlg = h('dialog', { 'aria-labelledby': 'dlg-t', style: 'max-width:720px' });
       var done = function (v) { dlg.close(); dlg.remove(); resolve(v); };
       function check() {
         var per = {}, changed = 0, bad = '';
@@ -261,10 +261,10 @@
         var moves = []; ents.forEach(function (x, i) { if (sels[i].value && Number(sels[i].value) !== x.cur) moves.push({ entry_id: x.e.entry_id, lane: Number(sels[i].value) }); });
         done({ moves: moves, reason: reason });
       });
-      dlg.append(h('div', { class: 'dlg', style: 'max-width:760px;width:calc(100vw - 32px)' },
+      dlg.append(h('div', { class: 'dlg' },
         h('h2', { class: 'pm-h', id: 'dlg-t', style: 'font-size:26px', text: 'Set lanes: ' + b.name }),
         h('p', { style: 'font-size:15px;color:#33445C', text: 'Pick a lane for each entry' + (cap ? ' (up to ' + cap + ' per lane)' : '') + ', then press Save all once. Nothing is saved until then.' }),
-        h('div', { style: 'max-height:52vh;overflow:auto;border:1px solid #D5DBE4;border-radius:8px' }, h('table', { class: 'pm-tbl', style: 'width:100%' }, h('thead', null, h('tr', null, h('th', { text: 'Team' }), h('th', { text: 'Bowlers' }), h('th', { text: 'Lane' }))), h('tbody', null, rows))),
+        h('div', { style: 'max-height:52vh;overflow-y:auto;overflow-x:hidden;border:1px solid #D5DBE4;border-radius:8px' }, rows),
         msg,
         inp ? h('div', null, h('label', { class: 'pm-lbl', text: 'Reason (required, goes in the log)' }), inp) : null,
         h('div', { class: 'dlg-act' }, h('button', { class: 'pm-btn', type: 'button', onClick: function () { done(null); } }, 'Cancel'), save)));
