@@ -221,6 +221,64 @@
     });
   }
 
+
+  // Admin sets many lanes at once and saves them in one go.
+  function bulkDlg(b) {
+    var running = ['live', 'paused'].indexOf(D.tournament.status) >= 0;
+    var span = b.span || 1, cap = b.share || 0;
+    var ents = b.lots.filter(function (l) { return !l.orphan; }).slice().sort(function (x, y) { return x.lot_no - y.lot_no; }).map(function (l) { return { e: l, cur: l.lane_start }; })
+      .concat(b.missing.map(function (e) { return { e: e, cur: 0 }; }));
+    return new Promise(function (resolve) {
+      var sels = [], rows = ents.map(function (x) {
+        var opts = [h('option', { value: '', text: x.cur ? 'Lane ' + x.e.label : 'No lane yet' })];
+        if (!x.cur) opts[0].selected = true;
+        for (var ln = b.lane_from; ln + span - 1 <= b.lane_to; ln++) { var o = h('option', { value: String(ln), text: 'Lane ' + (span > 1 ? ln + '-' + (ln + span - 1) : ln) }); if (x.cur === ln) o.selected = true; opts.push(o); }
+        if (x.cur) opts.shift();
+        var sel = h('select', { class: 'pm-in', 'aria-label': 'Lane for ' + x.e.team + ' ' + names(x.e), style: 'min-width:130px' }, opts);
+        sel.addEventListener('change', check); sels.push(sel);
+        return h('tr', null, h('td', { text: x.e.team + (x.e.entry_no > 1 ? ' ' + x.e.entry_no : '') }), h('td', { text: names(x.e) }), h('td', null, sel));
+      });
+      var msg = h('p', { style: 'font-size:14px;font-weight:600;min-height:20px', role: 'status' });
+      var inp = running ? h('input', { class: 'pm-in', type: 'text', maxlength: '120', placeholder: 'For example: lane 3 is out of order', autocomplete: 'off', 'aria-label': 'Reason' }) : null;
+      var save = h('button', { class: 'pm-btn pm-btn--pri', type: 'button' }, 'Save all');
+      var dlg = h('dialog', { 'aria-labelledby': 'dlg-t' });
+      var done = function (v) { dlg.close(); dlg.remove(); resolve(v); };
+      function check() {
+        var per = {}, changed = 0, bad = '';
+        ents.forEach(function (x, i) {
+          var v = sels[i].value ? Number(sels[i].value) : x.cur;
+          if (v) { per[v] = (per[v] || 0) + (span > 1 ? 0 : 1); if (span > 1) for (var k = 0; k < span; k++) per[v + k] = (per[v + k] || 0) + 1; }
+          if (sels[i].value && Number(sels[i].value) !== x.cur) changed++;
+        });
+        Object.keys(per).forEach(function (ln) { var max = cap || 1; if (per[ln] > max && !bad) bad = 'Lane ' + ln + ' has ' + per[ln] + ' entries. The limit is ' + max + ' per lane.'; });
+        msg.textContent = bad || (changed ? changed + (changed === 1 ? ' change' : ' changes') + ' ready to save.' : 'Pick lanes, then save once.');
+        msg.style.color = bad ? '#B42318' : '#33445C';
+        save.disabled = !!bad || !changed;
+      }
+      save.addEventListener('click', function () {
+        var reason = inp ? inp.value.trim() : '';
+        if (running && reason.length < 3) { msg.textContent = 'A reason is required.'; msg.style.color = '#B42318'; inp.focus(); return; }
+        var moves = []; ents.forEach(function (x, i) { if (sels[i].value && Number(sels[i].value) !== x.cur) moves.push({ entry_id: x.e.entry_id, lane: Number(sels[i].value) }); });
+        done({ moves: moves, reason: reason });
+      });
+      dlg.append(h('div', { class: 'dlg', style: 'max-width:760px;width:calc(100vw - 32px)' },
+        h('h2', { class: 'pm-h', id: 'dlg-t', style: 'font-size:26px', text: 'Set lanes: ' + b.name }),
+        h('p', { style: 'font-size:15px;color:#33445C', text: 'Pick a lane for each entry' + (cap ? ' (up to ' + cap + ' per lane)' : '') + ', then press Save all once. Nothing is saved until then.' }),
+        h('div', { style: 'max-height:52vh;overflow:auto;border:1px solid #D5DBE4;border-radius:8px' }, h('table', { class: 'pm-tbl', style: 'width:100%' }, h('thead', null, h('tr', null, h('th', { text: 'Team' }), h('th', { text: 'Bowlers' }), h('th', { text: 'Lane' }))), h('tbody', null, rows))),
+        msg,
+        inp ? h('div', null, h('label', { class: 'pm-lbl', text: 'Reason (required, goes in the log)' }), inp) : null,
+        h('div', { class: 'dlg-act' }, h('button', { class: 'pm-btn', type: 'button', onClick: function () { done(null); } }, 'Cancel'), save)));
+      dlg.addEventListener('cancel', function (ev) { ev.preventDefault(); done(null); });
+      document.body.append(dlg); dlg.showModal(); check();
+    });
+  }
+  function bulk(b) {
+    bulkDlg(b).then(function (v) {
+      if (!v) return;
+      run('lanes.moveMany', { block_id: b.block_id, moves: v.moves, reason: v.reason }, function (r) { return b.name + ': ' + (r.changed || 0) + ' lanes saved.'; });
+    });
+  }
+
   var STATE = { drawn: ['Drawn', 'pm-tag--ok'], not_drawn: ['Not drawn', 'pm-tag--warn'], needs_check: ['Draw needs checking', 'pm-tag--warn'], empty: ['No entries', ''], 'n/a': ['Set after All Events', ''] };
   function tag(text, cls) { return h('span', { class: 'pm-tag' + (cls ? ' ' + cls : ''), text: text }); }
   function stat(n, l) { return h('div', null, h('b', { text: String(n) }), h('span', { text: l })); }
@@ -230,9 +288,10 @@
     var bad = b.state === 'needs_check';
     var canEdit = admin && D.locked_at && D.can_lock && !b.scored && b.state !== 'n/a';
     var sv = STATE[b.state] || ['', ''];
+    if (!D.locked_at && b.state !== 'n/a') sv = ['Entries not locked yet', 'pm-tag--warn'];
     var kids = [h('div', { class: 'ln-hd' },
       h('h3', { text: b.name }),
-      h('div', { class: 'ln-tags' }, tag(b.start_time), tag(b.category + ' · ' + b.event), tag('Lanes ' + b.lane_from + ' to ' + b.lane_to), tag(sv[0], sv[1]), b.scored ? tag('Scores entered', 'pm-tag--off') : null))];
+      h('div', { class: 'ln-tags' }, tag(b.start_time), tag(b.category + ' · ' + b.event), tag('Lanes ' + b.lane_from + ' to ' + b.lane_to), (b.event_key !== 's' ? tag(b.share ? b.share + ' entries per lane' : ((b.span || 1) > 1 ? (b.span + ' lanes per entry') : '1 entry per lane (set sharing in Setup)'), b.share ? 'pm-tag--ok' : 'pm-tag--warn') : null), tag(sv[0], sv[1]), b.scored ? tag('Scores entered', 'pm-tag--off') : null))];
     if (b.state === 'n/a') { kids.push(h('p', { class: 'pm-help', text: 'Masters lanes are set after All Events, so there is nothing to draw here yet.' })); return h('section', { class: 'ln-blk' }, kids); }
     if (b.entries_n || b.lots.length) kids.push(h('p', { class: 'pm-help', style: 'margin:0', text: b.entries_n + (b.entries_n === 1 ? ' entry' : ' entries') + ' · ' + b.lanes_needed + ' of ' + b.lanes_have + ' lanes needed' + (b.lanes_needed > b.lanes_have ? ' (not enough lanes: change the lanes in Setup)' : '') }));
     if (b.lots.length) {
@@ -258,6 +317,7 @@
       var acts = [];
       if (b.state === 'not_drawn') acts.push(h('button', { class: 'pm-btn pm-btn--pri', type: 'button', disabled: busy, onClick: function () { drawBlock(b, 'full'); } }, (NUM() ? 'Draw by numbers' : 'Draw lanes')));
       if (b.state === 'needs_check' && !NUM()) acts.push(h('button', { class: 'pm-btn pm-btn--pri', type: 'button', disabled: busy, onClick: function () { drawBlock(b, 'fill'); } }, 'Fill gaps'));
+      if (canEdit && (b.lots.length || b.missing.length)) acts.push(h('button', { class: 'pm-btn', type: 'button', disabled: busy, onClick: function () { bulk(b); } }, 'Set lanes in bulk'));
       if (b.lots.length && !b.scored) acts.push(h('button', { class: 'pm-btn pm-btn--sm pm-btn--danger', type: 'button', disabled: busy, onClick: function () { drawBlock(b, 'full'); } }, 'Draw again'));
       if (acts.length) kids.push(h('div', { class: 'pm-act' }, acts));
     }
@@ -296,7 +356,8 @@
       kids.push(h('p', { class: 'pm-help', style: 'margin:0', text: D.locked_at ? 'Read only. The Admin makes and changes the lane draw.' : 'The lane draw has not been made yet.' }));
     }
     head.replaceChildren.apply(head, kids.filter(Boolean)); head.setAttribute('aria-busy', 'false');
-    warn.replaceChildren.apply(warn, D.warnings.length && admin ? [h('div', { style: 'display:flex;flex-direction:column;gap:8px' }, D.warnings.map(function (w) { return h('div', { class: 'pm-msg pm-msg--warn', text: w.text }); }))] : []);
+    var lockMsg = (admin && !D.locked_at) ? [h('div', { class: 'pm-msg pm-msg--warn', text: D.can_lock ? 'Entries are not locked yet. Doubles pairs (and the other entries) only show up here after you press Lock entries. Press it, then draw.' : 'Entries are not locked yet. Close registration in Tournament setup, then press Lock entries here. Doubles pairs only show up here after that.' })] : [];
+    warn.replaceChildren.apply(warn, lockMsg.length ? lockMsg : D.warnings.length && admin ? [h('div', { style: 'display:flex;flex-direction:column;gap:8px' }, D.warnings.map(function (w) { return h('div', { class: 'pm-msg pm-msg--warn', text: w.text }); }))] : []);
     var byDay = {};
     bl.forEach(function (b) { (byDay[b.day] = byDay[b.day] || []).push(b); });
     var out = Object.keys(byDay).map(Number).sort(function (a, b) { return a - b; }).map(function (d) {
